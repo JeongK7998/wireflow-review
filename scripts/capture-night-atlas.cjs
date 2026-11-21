@@ -1,0 +1,100 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const {pathToFileURL} = require('node:url');
+const {execFileSync} = require('node:child_process');
+const root = path.resolve(__dirname,'..');
+const release = path.join(root,'release');
+const media = path.join(release,'media');
+const {chromium} = require(require.resolve('playwright',{paths:[path.join(root,'.agents/skills/wireflow-review/verification')]}));
+const url = pathToFileURL(path.join(release,'example/night-atlas.html')).href;
+
+async function capture() {
+  const browser = await chromium.launch();
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(),'night-atlas-capture-'));
+  try {
+    const viewport = {width:1600,height:1000};
+    const context = await browser.newContext({viewport, reducedMotion:'reduce', permissions:['clipboard-read','clipboard-write'],
+      recordVideo:{dir:temp,size:viewport}});
+    const page = await context.newPage();
+    page.setDefaultTimeout(6500);
+    const errors=[];
+    page.on('pageerror',e=>errors.push(e.message));
+    const shot = name=>page.screenshot({path:path.join(media,name+'.png')});
+    const pause = (ms=1400)=>page.waitForTimeout(ms);
+    const device = page.locator('.artboard.is-active .device');
+    const control = id=>device.locator('[data-action="'+id+'"]:visible').last();
+    const click = async id=>{ await control(id).click(); await pause(350); };
+    const at = async id=>assert.equal(await page.locator('.artboard.is-active').getAttribute('data-screen'),id);
+    const note = 'A실 7번 핀 재점검 완료';
+    await page.goto(url);
+    await page.evaluate(()=>document.fonts.ready);
+    await page.locator('#overview').click();
+    await pause(); await shot('01-canvas');
+    await page.locator('#center').click();
+    await pause(); await shot('02-floor-plan');
+    const firstImage=device.locator('img').first();
+    assert.equal(await firstImage.evaluate(img=>img.complete && img.naturalWidth),960);
+    await click('zone-b'); await at('light'); await pause(800); await click('desk');
+    await click('schedule'); await at('schedule'); await pause(900); await click('desk');
+    await click('zone-a'); await at('field'); await pause(); await shot('03-installation');
+    await device.screenshot({path:path.join(media,'installation-detail.png')});
+    await click('inspect');
+    await click('preview'); await at('inspect');
+    await device.locator('[data-control="note"]').fill('A실 7번 핀 간격 확인');
+    await click('preview'); await at('inspect');
+    await device.locator('[data-control="checked"]').check();
+    await click('preview'); await at('confirm'); await pause();
+    await click('edit'); await at('inspect');
+    assert.equal(await device.locator('[data-control="note"]').inputValue(),'A실 7번 핀 간격 확인');
+    await device.locator('[data-control="note"]').fill(note);
+    await click('preview'); await at('confirm'); await pause(800); await click('send'); await at('sent');
+    await click('reopen'); await at('sent'); await pause(800);
+    await page.locator('#review-open').click();
+    const row=page.locator('[data-review-id="read-back"]');
+    await row.locator('.review-item').click(); await pause(); await shot('04-review');
+    await row.getByRole('button',{name:'AI 수정 요청에 담기'}).first().click();
+    await page.locator('#requests-open').click(); await pause(); await shot('05-handoff');
+    await page.locator('#copy-requests').click();
+    await page.waitForFunction(()=>document.querySelector('#copy-status').textContent.includes('복사했'));
+    const copied=await page.evaluate(()=>navigator.clipboard.readText());
+    assert.ok(copied.includes('기획 필수 동작') && copied.includes('AI 제안 화면 (미확정)') && copied.includes('reopen'));
+    await pause();
+    const video = page.video();
+    await context.close();
+    execFileSync('ffmpeg',['-loglevel','error','-y','-i',await video.path(),'-an','-c:v','libx264','-crf','20','-pix_fmt','yuv420p','-movflags','+faststart',path.join(media,'night-atlas.mp4')]);
+    assert.deepEqual(errors,[]);
+    // Verify the chosen proposal in a separate context and repeat the same real input path.
+    const patched = await browser.newPage({viewport,reducedMotion:'reduce'});
+    await patched.goto(url);
+    await patched.locator('#review-open').click();
+    await patched.locator('[data-review-id="read-back"] .review-item').click();
+    await patched.locator('[data-review-id="read-back"]').getByRole('button',{name:'인계 기록 화면으로 연결'}).click();
+    if (await patched.locator('#review').isVisible()) await patched.locator('#review-open').click();
+    await patched.locator('#screen-picker').selectOption('desk');
+    const active=patched.locator('.artboard.is-active .device');
+    const follow=id=>active.locator('[data-action="'+id+'"]:visible').last().click();
+    await follow('zone-a'); await follow('inspect');
+    await active.locator('[data-control="note"]').fill(note);
+    await active.locator('[data-control="checked"]').check();
+    await follow('preview'); await follow('send'); await follow('reopen');
+    assert.equal(await patched.locator('.artboard.is-active').getAttribute('data-screen'),'record');
+    assert.ok((await active.innerText()).includes(note));
+    await patched.goto(pathToFileURL(path.join(release,'index.html')).href);
+    await patched.setViewportSize({width:1200,height:800});
+    await patched.locator('main').evaluate(main=>main.style.cssText='padding:0;max-width:none');
+    const cover=patched.locator('section.hero');
+    await cover.evaluate(hero=>{
+      hero.style.cssText='width:1200px;height:630px;box-sizing:border-box;padding:45px;background:#f6f7ef;grid-template-columns:.8fr 1.2fr;gap:28px';
+      hero.querySelector('.actions').remove();
+      hero.querySelector('.version').textContent='WIREFLOW REVIEW   /   AGENT SKILL 0.5.0';
+    });
+    await cover.screenshot({path:path.join(media,'wireflow-cover.png')});
+    await patched.close();
+  } finally {
+    await browser.close(); await fs.rm(temp,{recursive:true,force:true});
+  }
+}
+capture().catch(err=>{console.error(err);process.exitCode=1;});

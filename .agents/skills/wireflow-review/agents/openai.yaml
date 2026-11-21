@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wireflow Review"
+  short_description: "기획을 클릭 가능한 화면 흐름으로 만들고 막힌 조작을 검수합니다"
+  default_prompt: "$wireflow-review를 사용해 내 프로젝트의 화면 흐름을 만들고 주요 경로와 복귀 동작을 검수해줘."
