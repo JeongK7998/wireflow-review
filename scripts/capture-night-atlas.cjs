@@ -82,16 +82,6 @@ async function capture() {
     await follow('preview'); await follow('send'); await follow('reopen');
     assert.equal(await patched.locator('.artboard.is-active').getAttribute('data-screen'),'record');
     assert.ok((await active.innerText()).includes(note));
-    await patched.goto(pathToFileURL(path.join(release,'index.html')).href);
-    await patched.setViewportSize({width:1200,height:800});
-    await patched.locator('main').evaluate(main=>main.style.cssText='padding:0;max-width:none');
-    const cover=patched.locator('section.hero');
-    await cover.evaluate(hero=>{
-      hero.style.cssText='width:1200px;height:630px;box-sizing:border-box;padding:45px;background:#f6f7ef;grid-template-columns:.8fr 1.2fr;gap:28px';
-      hero.querySelector('.actions').remove();
-      hero.querySelector('.version').textContent='WIREFLOW REVIEW   /   AGENT SKILL 0.5.0';
-    });
-    await cover.screenshot({path:path.join(media,'wireflow-cover.png')});
     await patched.close();
   } finally {
     await browser.close(); await fs.rm(temp,{recursive:true,force:true});

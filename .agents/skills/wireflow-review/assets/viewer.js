@@ -67,7 +67,7 @@ let {requests,drafts,copyChoices} = savedRequests;
 let editingRequest;
 let requestHighlight;
 $('sample-name').textContent = original.title;
-document.title = original.title+' · UI Wire Flow';
+document.title = original.title+' · XU Wireflow Review';
 $('review-source').textContent = original.review.source || original.source || '';
 $('manual-review').hidden = !original.scenarios.length;
 $('test-mode').hidden = !original.review.audit?.testMode;

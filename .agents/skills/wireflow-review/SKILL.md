@@ -1,11 +1,11 @@
 ---
 name: wireflow-review
-description: Generate and revise a clickable wireframe canvas from product plans, rough UX notes, or existing screens. Use when a designer wants to inspect full screen flows, refer to screen numbers in the same AI chat, or recheck UI and navigation changes.
+description: Help designers plan apps with AI by turning rough briefs and existing screens into a clickable map of user journeys. Use it to walk through a task, uncover overlooked steps or recovery paths, and distinguish required behavior from decisions still open.
 ---
 
 # Build and review a wireflow
 
-Use this workflow for reviewing a mockup. Identify the source briefly, keep reported facts and draft UI assumptions distinguishable, and preserve unresolved policy questions. Use dummy values for real-world side effects.
+Use the wireflow during planning. Let the designer start with the whole app, follow one user goal and see which steps, return paths or design decisions need attention. Identify the source briefly, keep reported facts and draft UI assumptions distinguishable, and preserve unresolved policy questions. Use dummy values for real-world side effects.
 
 1. Read [the flow model](references/flow-model.md). Turn the user's brief into a project-local flow JSON with a stable flow ID, screen IDs, and display numbers. Show the controls people need to take action. Include normal use, relevant empty or failed states, and recovery. Use the same shared renderer for every brief. Choose ordinary UI blocks from the model, and put project-specific content in the JSON. Record independent expected outcomes from the plan so checks can catch gaps in the current implementation. For each main journey, consider relevant missing input, failure, cancel or back, and retry. Turn the ones supported by the brief into explicit browser checks. Record unresolved policies as decisions and report which states were exercised. Put screen-specific planning intent under `brief` and relevant conditions under `uxConditions`. Preserve the user’s rationale and label AI-supplied screens as inferred.
 2. Run `node <skill-folder>/scripts/wireflow.cjs check FLOW.json` and `node <skill-folder>/scripts/wireflow.cjs build FLOW.json VIEWER.html` from the user's project. Node.js 18+ is sufficient. A build can contain intentionally broken links. Preserve them for review and report what the checks verified. Open the standalone HTML beside the chat when supported and provide links to the HTML and the source JSON. Use an external browser or the HTML file if the host lacks an embedded preview. When browser automation is available, click a main journey and a recovery case.

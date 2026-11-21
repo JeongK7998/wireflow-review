@@ -1,12 +1,14 @@
-# Wireflow Review v0.5.0
+# XU Wireflow Review v0.5.1
 
-기획에서 화면과 상태를 꺼내 클릭 가능한 와이어프레임으로 만들고, 멈춘 조작의 재현 순서와 수정 요청을 AI에 전달하는 스킬이다. 캔버스 언어는 한국어와 영어를 지원한다.
+바이브 코딩으로 앱을 기획할 때, 사용자 흐름을 따라가며 빠진 동작과 아직 정해야 할 일을 발견하는 스킬입니다. 캔버스 언어는 한국어와 영어를 지원한다.
+
+[![Night Atlas 전체 흐름](media/01-canvas.png)](media/01-canvas.png)
 
 ## 시작하기
 
 - GitHub에서 받는 사람은 저장소 주소를 프로젝트가 열린 AI 채팅에 붙여넣고 “이 스킬을 내 프로젝트에 적용해줘”라고 요청한다. 저장소 README는 [AI용 설치 안내](APPLY.md)로 연결된다.
 - 파일로 받는 사람은 전체 배포 키트를 AI에 첨부하고 “첨부한 키트의 APPLY.md를 읽고 이 스킬을 내 프로젝트에 적용해줘”라고 요청한다. 스킬 ZIP만 첨부했다면 “이 ZIP을 풀고 SKILL.md를 따라 내 프로젝트의 와이어프레임을 만들어줘”라고 요청한다.
-- 직접 설치할 때는 [설치 ZIP](wireflow-review-v0.5.0.zip) 안의 `wireflow-review/`를 프로젝트의 `.agents/skills/` 아래에 푼다. 결과 파일은 사용자의 프로젝트에 둔다. 기본 검수와 HTML 생성은 Node.js 18 이상, 독립 검증은 Node.js 20 이상과 Chromium을 사용한다. 독립 검증용 의존성은 최초 설치 시 내려받는다.
+- 직접 설치할 때는 [설치 ZIP](wireflow-review-v0.5.1.zip) 안의 `wireflow-review/`를 프로젝트의 `.agents/skills/` 아래에 푼다. 결과 파일은 사용자의 프로젝트에 둔다. 기본 검수와 HTML 생성은 Node.js 18 이상, 독립 검증은 Node.js 20 이상과 Chromium을 사용한다. 독립 검증용 의존성은 최초 설치 시 내려받는다.
 
 ## 대표 예제
 
@@ -39,12 +41,9 @@ GitHub 저장소 첫 화면에 소개, 시연 영상과 예제를 담은 README�
 
 | 용도 | 리소스 |
 |---|---|
-| 공유 카드 | [1200×630 PNG](media/wireflow-cover.png) |
 | 예제 화면 상세 | [설치 도면 PNG](media/installation-detail.png) |
 | 원본 브라우저 캡처 | [전체 캔버스](media/01-canvas.png) · [평면도](media/02-floor-plan.png) · [입체 도면](media/03-installation.png) · [검증 패널](media/04-review.png) · [수정 요청](media/05-handoff.png) |
 | 실제 조작 시연 | [무음 H.264 MP4](media/night-atlas.mp4) · [한국어 WebVTT 자막](media/night-atlas.ko.vtt) |
 | 무결성 | [SHA-256 체크섬](SHA256SUMS) |
-
-소개 문구 — “기획을 클릭 가능한 화면 흐름으로 만들고, 막힌 조작을 재현해 AI에 수정 요청을 전달하세요. Night Atlas 예제에서는 전시 평면도 탐색부터 다음 교대에 보낸 메모의 재열람까지 직접 확인할 수 있습니다.”
 
 예제 도면과 영상은 가상 전시를 위해 제작한 그림과 실제 더미 조작 녹화다. 폰트는 Inter, Patrick Hand, Gaegu를 사용하며 각 OFL 고지는 설치 ZIP의 `assets/paper/fonts/`와 생성된 HTML의 스타일에 포함된다. 스킬 코드와 홍보물의 공개 재배포 라이선스는 제작자가 정할 항목이다.
