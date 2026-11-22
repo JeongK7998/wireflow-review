@@ -32,4 +32,4 @@ Apply this skill to my project.
 
 To explore before using your own project, download the demo and open it in a browser. [Download the English demo](release/example/pottery-booking.en.html?raw=1)
 
-For AI tools following a repository link, use the project setup guide. [Setup guide](release/APPLY.md) · [Download the skill ZIP](release/wireflow-review-v0.5.2.zip?raw=1)
+For AI tools following a repository link, use the project setup guide. [Setup guide](release/APPLY.md) · [Download the skill ZIP](release/wireflow-review-v0.5.3.zip?raw=1)

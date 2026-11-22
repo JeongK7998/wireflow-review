@@ -9,7 +9,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / ".agents/skills/wireflow-review"
 RELEASE = ROOT / "release"
-VERSION = "0.5.2"
+VERSION = "0.5.3"
 OUTPUT = RELEASE / f"wireflow-review-v{VERSION}.zip"
 KIT = ROOT / "artifacts/wireflow-skill" / f"wireflow-release-kit-v{VERSION}.zip"
 

@@ -1002,19 +1002,16 @@ button.stage-heading::before { vertical-align: text-bottom; }
 .tabbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; flex: none; border-top: 1px solid var(--paper-placeholder); padding: 12px var(--screen-gutter) 24px; }
 .screen-error { margin-top: 9px; font-size: var(--paper-caption); }
 .screen-error:empty, .filter-tags:empty { display: none; }
-.welcome-image { margin-bottom: 21px; }
-.class-image { margin-bottom: 14px; }
 .search-row { display: grid; align-items: center; grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
 .filter-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .filter-tags .paper-tag { font-size: 16px; }
 .course-list { display: grid; gap: 10px; }
 .course-card {
-  display: grid; grid-template-columns: 81px minmax(0,1fr); gap: 11px; align-items: stretch; width: 100%; padding: 8px;
+  display: block; width: 100%; padding: 10px 12px;
   border: var(--paper-stroke) solid var(--paper-ink); border-radius: var(--paper-radius);
   background: var(--paper); color: var(--paper-ink); text-align: start;
 }
 .course-card:hover { background: var(--paper-section); }
-.paper-ui .course-card .course-image { align-self: start; padding: 6px; font-size: 11px; }
 .course-copy { display: grid; align-content: center; }
 .course-copy strong { font-size: var(--paper-hand-subheading); }
 .course-copy b { font-size: var(--paper-caption); }
@@ -1252,9 +1249,9 @@ dialog h3 { font-size: .95rem; }
         <section id="review" aria-label="검증 항목과 결과" data-en-aria-label="Requirements and results" hidden>
           <div id="review-results">
             <p id="requirements-summary" role="status"></p>
+            <div id="review-proposals" class="finding-actions" hidden></div>
             <div id="findings"></div>
             <p id="review-request-status" class="issue-request-status" role="status"></p>
-            <div id="review-proposals" class="finding-actions" hidden></div>
             <details id="review-scope">
               <summary data-en="Coverage and full paths">검증 범위와 전체 경로</summary>
               <div class="review-coverage">
@@ -2192,9 +2189,12 @@ function defaultCanvasPlacement(flow) {
 }
 
 function gridPositions(groups,groupDirection) {
-  return new Map(groups.flatMap(({ids},group)=>ids.map((id,slot)=>[
-    id,groupDirection==='vertical' ? {x:slot,y:group} : {x:group,y:slot},
-  ])));
+  // Leave room between group outlines and their headings when the map is fitted.
+  const groupStride = 1.16;
+  return new Map(groups.flatMap(({ids},index)=>{
+    const group = index * groupStride;
+    return ids.map((id,slot)=>[id,groupDirection==='vertical' ? {x:slot,y:group} : {x:group,y:slot}]);
+  }));
 }
 
 function defaultScreenNumbers(flow,groups) {
@@ -2428,7 +2428,7 @@ function auditLocalControl(entry,current,surface) {
   if (field==='clear-area' || field==='clear-category') {
     const filter = field.slice(6);
     control.click();
-    return {expected:ui('필터 전체','All filters'),actual:ui('필터 ','Filter ')+auditValue(vars[filter])};
+    return {expected:ui('전체','All'),actual:auditValue(vars[filter])};
   }
   if (workshop && field==='date') {
     expected = Number(control.value);
@@ -2446,7 +2446,7 @@ function auditLocalControl(entry,current,surface) {
     expected = !control.checked;
     control.click();
   } else {
-    expected = workshop ? {query:ui('목공','woodwork'),name:'이름 검증',email:'audit@example.com',memo:'요청 사항 검증'}[field] :
+    expected = workshop ? {query:ui('목공','woodwork'),name:ui('이름 검증','Test name'),email:'audit@example.com',memo:ui('요청 사항 검증','Test request')}[field] :
       control.type==='email'?'audit@example.com':control.type==='url'?'https://example.com':control.type==='tel'?'01012345678':ui('검증 입력','Test input');
     if (expected===undefined) return;
     changeInput(control,expected,'input');
@@ -3558,7 +3558,8 @@ const original = {...inputModel,review:inputModel.review || {},scenarios:inputMo
 const {flowPath,verification:buildVerification} = JSON.parse($('build-data').textContent);
 const workshop = original.review.renderer === 'workshop';
 const flowIdentity = original.id || original.title;
-const storagePrefix = workshop ? 'ui-wire-flow-workshop' : 'ui-wire-flow:'+JSON.stringify([location.pathname,flowIdentity]);
+const legacyWorkshop = workshop && !original.id;
+const storagePrefix = legacyWorkshop ? 'ui-wire-flow-workshop' : 'ui-wire-flow:'+JSON.stringify([location.pathname,flowIdentity]);
 const storageKey = storagePrefix+'-requests';
 const layoutKey = storagePrefix+'-layout';
 const artboards = new Map();
@@ -3648,7 +3649,7 @@ function write(node, ...children) {
 function readRequestState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    const legacyMemos = saved || !workshop ? {} : JSON.parse(localStorage.getItem('ui-wire-flow-workshop-memos') || '{}');
+    const legacyMemos = saved || !legacyWorkshop ? {} : JSON.parse(localStorage.getItem('ui-wire-flow-workshop-memos') || '{}');
     return {
       requests: (saved?.requests || []).filter(request=>screens.has(request.screen)).map(request=>{
         // Relabel the generated expected/actual pair in older issue reports; keep personal notes.
@@ -4516,9 +4517,21 @@ function renderReview() {
   $('review-request-status').textContent = '';
   renderRequirementPanel(audit,grouped);
   const proposals = $('review-proposals');
-  proposals.hidden = !appliedProposals.size || Boolean(testRun);
-  proposals.replaceChildren(...(proposals.hidden ? [] :
-    [button(ui('개선안 적용 취소','Undo proposed fixes'),'tool',()=>applyReview()),button(ui('흐름 JSON 저장','Save flow JSON'),'tool',saveReviewedFlow)]));
+  proposals.replaceChildren();
+  if (!testRun) {
+    for (const proposal of model.proposals || []) {
+      const label = ui('개선안 적용 · ', 'Try fix · ') + proposal.title;
+      const control = button(label,'tool soft',()=>applyReview(proposal.id));
+      control.dataset.proposal = proposal.id;
+      control.title = proposal.reason;
+      proposals.append(control);
+    }
+    if (appliedProposals.size) {
+      proposals.append(button(ui('개선안 적용 취소','Undo proposed fixes'),'tool',()=>applyReview()),
+        button(ui('흐름 JSON 저장','Save flow JSON'),'tool',saveReviewedFlow));
+    }
+  }
+  proposals.hidden = !proposals.childElementCount;
   $('recovery-results').replaceChildren(...audit.recovery.map(renderAuditCase));
   $('scenarios').replaceChildren(...model.scenarios.map((route,index)=>{
     const node = write(element('div','scenario-review-row'),
@@ -4586,11 +4599,13 @@ function applyReview(proposal) {
     $('review-request-status').textContent = error.message;
     return;
   }
+  closeVerificationFlow(false);
   appliedProposals = selected;
   screens = Wireflow.screensById(model);
   collectEdges();
   message = '';
   for (const id of artboards.keys()) renderBoard(id);
+  renderSimulation();
   center();
   renderScenarioGuide();
   renderReview();
@@ -5434,10 +5449,13 @@ canvas.addEventListener('gestureend',event=>{
 
 createWorld();
 populateRoutePicker();
+const blockedScenario = model.proposals?.length && Wireflow.check(model,ui).scenarios.find(scenario=>!scenario.passed);
+if (blockedScenario) $('route-picker').value = blockedScenario.id;
 collectEdges();
 populateDevices();
 setDevice(defaultDevice);
 select(active);
+if (blockedScenario) showOverview();
 updateRequestCount();
 renderRequirementPanel();
 new ResizeObserver(()=>{

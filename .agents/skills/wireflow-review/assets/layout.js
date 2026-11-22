@@ -17,9 +17,12 @@ function defaultCanvasPlacement(flow) {
 }
 
 function gridPositions(groups,groupDirection) {
-  return new Map(groups.flatMap(({ids},group)=>ids.map((id,slot)=>[
-    id,groupDirection==='vertical' ? {x:slot,y:group} : {x:group,y:slot},
-  ])));
+  // Leave room between group outlines and their headings when the map is fitted.
+  const groupStride = 1.16;
+  return new Map(groups.flatMap(({ids},index)=>{
+    const group = index * groupStride;
+    return ids.map((id,slot)=>[id,groupDirection==='vertical' ? {x:slot,y:group} : {x:group,y:slot}]);
+  }));
 }
 
 function defaultScreenNumbers(flow,groups) {

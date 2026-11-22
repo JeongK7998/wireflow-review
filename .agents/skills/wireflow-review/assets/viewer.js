@@ -965,9 +965,21 @@ function renderReview() {
   $('review-request-status').textContent = '';
   renderRequirementPanel(audit,grouped);
   const proposals = $('review-proposals');
-  proposals.hidden = !appliedProposals.size || Boolean(testRun);
-  proposals.replaceChildren(...(proposals.hidden ? [] :
-    [button(ui('개선안 적용 취소','Undo proposed fixes'),'tool',()=>applyReview()),button(ui('흐름 JSON 저장','Save flow JSON'),'tool',saveReviewedFlow)]));
+  proposals.replaceChildren();
+  if (!testRun) {
+    for (const proposal of model.proposals || []) {
+      const label = ui('개선안 적용 · ', 'Try fix · ') + proposal.title;
+      const control = button(label,'tool soft',()=>applyReview(proposal.id));
+      control.dataset.proposal = proposal.id;
+      control.title = proposal.reason;
+      proposals.append(control);
+    }
+    if (appliedProposals.size) {
+      proposals.append(button(ui('개선안 적용 취소','Undo proposed fixes'),'tool',()=>applyReview()),
+        button(ui('흐름 JSON 저장','Save flow JSON'),'tool',saveReviewedFlow));
+    }
+  }
+  proposals.hidden = !proposals.childElementCount;
   $('recovery-results').replaceChildren(...audit.recovery.map(renderAuditCase));
   $('scenarios').replaceChildren(...model.scenarios.map((route,index)=>{
     const node = write(element('div','scenario-review-row'),
@@ -1035,11 +1047,13 @@ function applyReview(proposal) {
     $('review-request-status').textContent = error.message;
     return;
   }
+  closeVerificationFlow(false);
   appliedProposals = selected;
   screens = Wireflow.screensById(model);
   collectEdges();
   message = '';
   for (const id of artboards.keys()) renderBoard(id);
+  renderSimulation();
   center();
   renderScenarioGuide();
   renderReview();
@@ -1883,10 +1897,13 @@ canvas.addEventListener('gestureend',event=>{
 
 createWorld();
 populateRoutePicker();
+const blockedScenario = model.proposals?.length && Wireflow.check(model,ui).scenarios.find(scenario=>!scenario.passed);
+if (blockedScenario) $('route-picker').value = blockedScenario.id;
 collectEdges();
 populateDevices();
 setDevice(defaultDevice);
 select(active);
+if (blockedScenario) showOverview();
 updateRequestCount();
 renderRequirementPanel();
 new ResizeObserver(()=>{

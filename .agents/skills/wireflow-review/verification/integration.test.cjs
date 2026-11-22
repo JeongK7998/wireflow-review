@@ -340,3 +340,47 @@ test('overview choices work with legacy flows without scenarios and leave broken
   assert.equal(await page.locator('[data-route-control]').count(),0);
   assert.equal(await page.locator('#route-stop').isVisible(),false);
 });
+
+test('a missing retry stays blocked until the viewer applies a proposal without a finding ID', async t => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-retry-'));
+  t.after(()=>fs.rm(cwd,{recursive:true,force:true}));
+  const input = path.join(cwd,'flow.json'), output = path.join(cwd,'flow.html');
+  const flow = {
+    title:'Repair request',goal:'Retry a failed request',start:'form',stages:['Request','Result'],
+    vars:{note:''},review:{locale:'en'},
+    screens:[
+      {id:'form',title:'Request',origin:'source',stage:0,ui:{blocks:[{type:'input',field:'note',label:'Note'}]},
+        actions:[{id:'fail',label:'Simulate failure',to:'failure'},{id:'submit',label:'Submit',to:'done'}]},
+      {id:'failure',title:'Failed',origin:'source',stage:1,actions:[]},
+      {id:'done',title:'Done',origin:'source',stage:1,terminal:true,body:'Received {{note}}',actions:[]}
+    ],
+    scenarios:[{id:'recover',title:'Recover',steps:[{action:'fail',screen:'failure'},{action:'retry',screen:'form'},{action:'submit',screen:'done'}]}],
+    proposals:[{id:'recover-input',title:'Return to the form',reason:'Keep the entered note',
+      changes:[{screen:'failure',action:{id:'retry',label:'Retry',to:'form'}}]}]
+  };
+  await fs.writeFile(input,JSON.stringify(flow));
+  await run(process.execPath,[cli,'build',input,output]);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({reducedMotion:'reduce'});
+  await page.goto(pathToFileURL(output).href);
+  assert.equal(await page.locator('#route-picker').inputValue(),'recover');
+  assert.equal(await page.locator('#route-stop').isVisible(),true);
+  await page.locator('#center').click();
+  const device = page.locator('.artboard.is-active .device');
+  await device.locator('[data-control="note"]').fill('broken handle');
+  await device.locator('[data-action="fail"]').click();
+  assert.equal(await device.locator('[data-action="retry"]').count(),0);
+  await page.locator('#review-open').click();
+  await page.locator('#review-proposals [data-proposal="recover-input"]').click();
+  await page.locator('#review-open').click();
+  assert.equal(await page.locator('#route-stop').isVisible(),false);
+  await device.locator('[data-action="retry"]').click();
+  assert.equal(await device.locator('[data-control="note"]').inputValue(),'broken handle');
+  await device.locator('[data-action="submit"]').click();
+  assert.match(await device.innerText(),/Received broken handle/);
+  await page.locator('#review-open').click();
+  await page.getByRole('button',{name:'Undo proposed fixes'}).click();
+  assert.equal(await page.locator('#route-stop').isVisible(),true);
+  assert.equal(await page.locator('[data-screen="failure"] [data-action="retry"]').count(),0);
+});
