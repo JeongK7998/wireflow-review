@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta property="og:image" content="media/01-canvas.png">
+  <meta property="og:image" content="media/booking-mobile-en.png">
   <title>XU Wireflow Review</title>
   <style>
     * { box-sizing: border-box; }
@@ -16,6 +16,7 @@
     figure { margin: 0; }
     img, video { display: block; width: 100%; height: auto; }
     img { border: 1px solid #d1d9e0; }
+    figure + figure { margin-top: 28px; }
     figcaption { margin-top: 8px; }
     a { color: #1559a1; text-underline-offset: 3px; }
     summary, button { cursor: pointer; }
@@ -28,29 +29,29 @@
 <main>
   <h1>XU Wireflow Review</h1>
   <p>바이브 코딩으로 앱을 기획하는 디자이너가 화면을 직접 눌러 보며 빠진 동작과 아직 결정할 일을 찾도록 돕는 스킬입니다.</p>
-  <figure>
-    <a href="media/01-canvas.png"><img src="media/01-canvas.png" width="1600" height="1000" alt="Night Atlas의 운영 데스크에서 점검 메모 인계까지 여덟 화면을 연결한 와이어플로우"></a>
-    <figcaption>전시 운영 앱 Night Atlas의 전체 흐름입니다. 평면도에서 A실을 골라 도면을 확인하고, 다음 교대에 메모를 보내는 경로를 따라가 보세요. <a href="example/night-atlas.html">예제 직접 눌러보기</a></figcaption>
+  <figure lang="en">
+    <a href="media/booking-mobile-en.png"><img src="media/booking-mobile-en.png" width="1755" height="1815" alt="All 16 mobile screens in five functional groups, with seven numbered arrows tracing class filters, session selection and booking"></a>
+    <figcaption><strong>Mobile · From class search to booking.</strong> Follow the numbered arrows from class filters to booking confirmation. The empty search and failed payment states are visible alongside the selected path.</figcaption>
   </figure>
+  <figure lang="en">
+    <a href="media/booking-tablet-en.png"><img src="media/booking-tablet-en.png" width="2145" height="1320" loading="lazy" alt="Flow Verification beside connected tablet screens for a confirmed booking, booking list, details, cancellation dialog and cancelled booking"></a>
+    <figcaption><strong>Tablet · Trace the cancellation path.</strong> Trace the route from a confirmed booking to My bookings. Keep booking returns to the details. Confirm cancellation leads to the cancelled state.</figcaption>
+  </figure>
+  <p><a href="example/pottery-booking.en.html" lang="en">Open the English demo</a> · <a href="example/pottery-booking.ko.html">한국어 예제</a></p>
   <details>
-    <summary>실제 조작 영상 보기</summary>
+    <summary>Night Atlas · 도면 점검 시연 영상 보기</summary>
     <video controls playsinline preload="none" aria-label="Night Atlas에서 메모를 보내고 검증하는 과정">
       <source src="media/night-atlas.mp4" type="video/mp4">
       <track kind="captions" src="media/night-atlas.ko.vtt" srclang="ko" label="한국어">
     </video>
     <a href="media/night-atlas.ko.vtt">한국어 자막 파일</a>
   </details>
-  <h2>흐름을 따라가며 발견한 문제</h2>
-  <figure>
-    <a href="media/04-review.png"><img src="media/04-review.png" width="1600" height="1000" loading="lazy" alt="‘보낸 메모 재열람’을 선택한 검증 패널과 인계 전송 완료 화면"></a>
-    <figcaption>메모는 전송되지만 <strong>‘보낸 메모 다시 열기’</strong>를 누르면 길이 끊깁니다. 재열람은 기획에 있는 동작이고, 별도 인계 기록 화면을 만들지는 디자이너가 정합니다. AI에 복사하는 수정 요청에도 이 구분이 남습니다.</figcaption>
-  </figure>
   <h2>내 프로젝트에 적용하기</h2>
   <p id="share-help">프로젝트가 열린 AI 채팅에 전체 배포 키트를 첨부하고 아래 요청을 보내세요.</p>
   <textarea id="prompt" rows="2" readonly aria-label="AI에 보낼 요청">첨부한 배포 키트의 APPLY.md를 읽고 이 스킬을 내 프로젝트에 적용해줘.</textarea>
   <button id="copy" type="button">요청 복사</button>
   <output id="feedback" aria-live="polite"></output>
-  <p><a href="APPLY.md">AI용 적용 안내</a> · <a href="wireflow-review-v0.5.1.zip" download>스킬 ZIP</a> · <a href="example/brief.md">예제 기획</a> · <a href="README.md">배포 파일 안내</a> · <a href="SHA256SUMS">체크섬</a></p>
+  <p><a href="APPLY.md">AI용 적용 안내</a> · <a href="wireflow-review-v0.5.2.zip" download>스킬 ZIP</a> · <a href="example/pottery-booking.md">예제 기획</a> · <a href="README.md">배포 파일 안내</a> · <a href="SHA256SUMS">체크섬</a></p>
 </main>
 <script>
   const promptBox = document.querySelector('#prompt');

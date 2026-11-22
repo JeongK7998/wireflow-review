@@ -19,6 +19,8 @@ function actionRegions(screen,vars,form) {
       region.node.replaceWith(replacement);
       region.node = replacement;
     }
+    const device = form.closest('.device');
+    if (device) markRouteControls(device,screen.id);
     if (form.closest('.artboard.is-active')) renderSimulation();
   }
   if (screen.actions.some(action=>action.when)) {

@@ -242,6 +242,109 @@ function createConnections(canvas, frames, pitch, annotations = []) {
     }
   }
 
+  // Plan a selected transition from the side nearest its actual control. Normalize
+  // the DOM coordinates so the same route survives panning and camera scaling.
+  const selectedRoutes = new Map();
+  function selectedRoute(step) {
+    const sourceFrame = frames.get(step.from);
+    const targetFrame = frames.get(step.to);
+    if (!sourceFrame || !targetFrame) return;
+    const board = artboards.get(step.from);
+    const control = [...board.querySelectorAll('[data-route-control]')].find(node =>
+      node.dataset.action === step.action && node.getClientRects().length);
+    const bounds = board.getBoundingClientRect();
+    const anchor = control?.getBoundingClientRect();
+    const rx = anchor && bounds.width ? (anchor.x+anchor.width/2-bounds.x)/bounds.width : .5;
+    const ry = anchor && bounds.height ? (anchor.y+anchor.height/2-bounds.y)/bounds.height : .5;
+    const x = Math.round(Math.min(.95,Math.max(.05,rx))*sourceFrame.w);
+    const y = Math.round(Math.min(.95,Math.max(.05,ry))*sourceFrame.h);
+    const key = [step.from,step.to,step.action,x,y,step.number%3].join('|');
+    if (selectedRoutes.has(key)) return selectedRoutes.get(key);
+    let sources = ports(step.from,0);
+    if (anchor) {
+      const distances = [x,sourceFrame.w-x,y,sourceFrame.h-y];
+      const side = distances.indexOf(Math.min(...distances));
+      const port = sources[side];
+      if (port.normal[0]) port.tip[1] = sourceFrame.y+y;
+      else port.tip[0] = sourceFrame.x+x;
+      sources = [port];
+    }
+    const targets = ports(step.to,-targetFrame.w*.08);
+    const stagger = (step.number%3-1)*12;
+    // Exit below the source row when it leads into another functional group.
+    // These gutters keep arrows and labels clear of the titles above the boards.
+    const [source] = sources;
+    let gutter;
+    if (frames.get(step.from).group !== frames.get(step.to).group && source.normal[1]>=0) {
+      const sourceBottom = sourceFrame.y + sourceFrame.h;
+      const below = targetFrame.y > sourceBottom;
+      const lane = below ? sourceBottom + Math.max(24,(targetFrame.y-sourceBottom-95)/2) :
+        Math.max(sourceBottom,targetFrame.y+targetFrame.h) + 32;
+      const end = below ? targets[sourceFrame.x >= targetFrame.x ? 1 : 0] : targets[3];
+      const exitX = source.tip[0] + source.normal[0]*34;
+      const entryX = end.tip[0] + end.normal[0]*40;
+      const corners = [source.tip,[exitX,source.tip[1]],[exitX,lane],[entryX,lane],[entryX,end.tip[1]],end.tip];
+      const points = corners.filter((point,index)=>!index || distance(point,corners[index-1])>.1);
+      if (points.length>=3 && lane>source.tip[1] && (below || lane>end.tip[1])) {
+        const shape = gutterPath(points);
+        if (shape.segments.every(segment=>clearCurve(segment,step.from,step.to))) {
+          gutter = {source,target:end,points,path:shape.path};
+        }
+      }
+    }
+    const route = gutter || directRoute(sources,targets) || laneRoute(sources,targets,stagger) ||
+      getRoute(connectionKey(step.from,step.to));
+    if (route) selectedRoutes.set(key,route);
+    return route;
+  }
+
+  function paintSelected(step,zoom,occupied) {
+    const route = selectedRoute(step);
+    if (!route) return;
+    const unit = 1/zoom;
+    const color = step.failed ? issue : '#00685e';
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+    ctx.lineWidth = 5*unit;
+    ctx.strokeStyle = paper;
+    ctx.stroke(route.path);
+    ctx.lineWidth = 2.5*unit;
+    ctx.strokeStyle = color;
+    ctx.stroke(route.path);
+    ctx.beginPath();
+    drawArrow(route.target.id===step.to ? route.target : route.source,9*unit);
+    ctx.stroke();
+
+    let spots = route.middle ? [route.middle] : [];
+    if (route.points) {
+      const segments = route.points.slice(1).map((end,index)=>[route.points[index],end]);
+      segments.sort(([a,b],[c,d])=>distance(c,d)-distance(a,b));
+      spots = segments.flatMap(([a,b])=>[.5,.3,.7].map(t=>shift(a,delta(a,b),t)));
+    }
+    const obstacles = [...occupied,...frames.values()];
+    const full = step.numbers.join(', ')+'  '+step.label;
+    ctx.font = '650 '+11*unit+'px '+css('--paper-font-sans');
+    for (const text of zoom<.20 ? [step.numbers.join(', ')] : [full,step.numbers.join(', ')]) {
+      const w = ctx.measureText(text).width+10*unit, h = 18*unit;
+      for (const [x,y] of spots) {
+        const left=x-w/2, top=y-h/2;
+        if (obstacles.some(box=>left<box.x+box.w && left+w>box.x && top<box.y+box.h && top+h>box.y)) continue;
+        occupied.push({x:left-2*unit,y:top-2*unit,w:w+4*unit,h:h+4*unit});
+        ctx.fillStyle = paper;
+        ctx.lineWidth = unit;
+        ctx.beginPath();
+        ctx.roundRect(left,top,w,h,6*unit);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle=color;
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(text,x,y);
+        return;
+      }
+    }
+  }
+
   return function draw(edges, focus, offset, zoom, verification) {
     const width=canvas.clientWidth, height=canvas.clientHeight;
     const scale=Math.min(devicePixelRatio||1,1.5);
@@ -259,7 +362,20 @@ function createConnections(canvas, frames, pitch, annotations = []) {
       for (const [key,targets] of edges) {
         if (!verification.has(key)) paint(key,targets,'normal',true);
       }
-      for (const [key,{targets,failed}] of verification) paint(key,targets,failed?'issue':'focus');
+      const occupied = [];
+      for (const [key,entry] of verification) {
+        const other = [...(edges.get(key) || [])].filter(target=>!entry.targets.has(target));
+        if (other.length) paint(key,other,'normal',true);
+        const actions = new Map();
+        for (const step of entry.steps) {
+          const id = [step.from,step.to,step.action ?? step.label].join('|');
+          if (!actions.has(id)) actions.set(id,{...step,numbers:[]});
+          const action = actions.get(id);
+          action.numbers.push(step.number);
+          action.failed ||= step.failed;
+        }
+        for (const action of actions.values()) paintSelected(action,zoom,occupied);
+      }
       ctx.globalAlpha = 1;
       return;
     }

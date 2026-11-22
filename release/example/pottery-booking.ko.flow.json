@@ -1,0 +1,1549 @@
+{
+  "title": "도예 공방 예약",
+  "goal": "원하는 도예 수업을 골라 예약하고, 필요하면 취소한다.",
+  "start": "welcome",
+  "entries": [
+    "browse"
+  ],
+  "vars": {
+    "area": "전체",
+    "category": "전체",
+    "level": "첫 수업",
+    "reminders": true,
+    "newsletter": false,
+    "query": "",
+    "course": "핸드빌딩 입문",
+    "date": 21,
+    "time": "14:00",
+    "guests": "1명",
+    "name": "",
+    "email": "",
+    "memo": "",
+    "agreed": false,
+    "reservation": "없음",
+    "bookedCourse": "핸드빌딩 입문",
+    "bookedDate": 21,
+    "bookedTime": "14:00",
+    "bookedGuests": "1명",
+    "bookedName": "서윤",
+    "bookedEmail": "seoyun@example.com"
+  },
+  "stages": [
+    "시작하기",
+    "수업 찾기",
+    "수업 예약",
+    "예약 관리",
+    "설정"
+  ],
+  "screens": [
+    {
+      "id": "welcome",
+      "brief": "처음 방문한 사용자가 관심사를 설정하거나 바로 수업을 둘러볼 수 있게 합니다.",
+      "number": "01.01",
+      "title": "첫 진입",
+      "stage": 0,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "start",
+          "label": "내 취향 설정하기",
+          "to": "setup"
+        },
+        {
+          "id": "skip",
+          "label": "둘러보기",
+          "to": "browse",
+          "kind": "secondary"
+        }
+      ],
+      "uxConditions": [
+        "초기 설정을 건너뛰어도 기본값으로 수업 목록에 진입할 수 있어요. 기본 지역과 수업 종류는 전체예요.",
+        "초기 설정을 선택한 뒤에는 값을 저장하고 목록으로 가거나 첫 진입 화면으로 돌아올 수 있어요."
+      ]
+    },
+    {
+      "id": "setup",
+      "brief": "첫 예약 전에 지역, 수업 경험과 받고 싶은 알림을 고릅니다.",
+      "number": "01.02",
+      "title": "초기 설정",
+      "stage": 0,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "save",
+          "label": "수업 찾아보기",
+          "to": "browse"
+        },
+        {
+          "id": "back",
+          "label": "처음으로",
+          "to": "welcome",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "저장한 지역은 수업 목록의 지역 필터에 바로 사용돼요. 수업 경험 선택값은 현재 더미 세션에 저장돼요.",
+        "예약 알림과 신규 수업 소식은 별개예요. 기본값은 예약 알림 켜짐, 신규 수업 소식 꺼짐이에요."
+      ]
+    },
+    {
+      "id": "browse",
+      "brief": "원하는 수업을 찾기 위해 목록을 둘러보거나 지역과 수업 종류로 좁힙니다.",
+      "number": "02.01",
+      "title": "수업 목록",
+      "stage": 1,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "filters",
+          "label": "필터",
+          "to": "filters",
+          "kind": "inline"
+        },
+        {
+          "id": "open-hand",
+          "label": "핸드빌딩 입문",
+          "to": "class",
+          "kind": "inline",
+          "set": {
+            "course": "핸드빌딩 입문"
+          }
+        },
+        {
+          "id": "open-wheel",
+          "label": "물레 체험",
+          "to": "class",
+          "kind": "inline",
+          "set": {
+            "course": "물레 체험"
+          }
+        },
+        {
+          "id": "open-glaze",
+          "label": "유약 드로잉",
+          "to": "class",
+          "kind": "inline",
+          "set": {
+            "course": "유약 드로잉"
+          }
+        },
+        {
+          "id": "empty",
+          "label": "결과 없음",
+          "to": "search-empty",
+          "kind": "inline"
+        },
+        {
+          "id": "bookings",
+          "label": "내 예약",
+          "to": "bookings",
+          "kind": "tab"
+        },
+        {
+          "id": "settings",
+          "label": "설정",
+          "to": "settings",
+          "kind": "tab"
+        }
+      ],
+      "uxConditions": [
+        "검색어는 수업명·지역·수업 종류 중 하나에 포함되면 일치해요. 선택한 지역과 수업 종류 필터는 둘 다 만족해야 해요.",
+        "검색창의 지우기는 검색어만 비우고, 필터 태그의 지우기는 해당 필터만 해제해요.",
+        "일치 항목이 0개일 때 검색을 실행하거나 빈 결과 화면 보기를 누르면 검색 결과 없음으로 이동해요."
+      ]
+    },
+    {
+      "id": "filters",
+      "brief": "지역과 수업 종류를 고르고, 적용하면 목록과 필터 태그에 함께 반영합니다.",
+      "number": "02.02",
+      "title": "필터 팝업",
+      "stage": 1,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "apply",
+          "label": "필터 적용",
+          "to": "browse"
+        },
+        {
+          "id": "close",
+          "label": "필터 닫기",
+          "to": "browse",
+          "kind": "close"
+        }
+      ],
+      "uxConditions": [
+        "팝업에서 고른 지역과 수업 종류는 적용 버튼을 누를 때 목록에 반영돼요.",
+        "닫기 또는 Escape로 나가면 직전에 적용한 필터와 검색어로 돌아가요."
+      ]
+    },
+    {
+      "id": "search-empty",
+      "brief": "검색 결과가 없어도 현재 검색을 확인하고 전체 목록으로 돌아갈 수 있어야 합니다.",
+      "number": "02.03",
+      "title": "검색 결과 없음",
+      "stage": 1,
+      "slot": 2,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "clear",
+          "label": "검색어와 필터 초기화",
+          "to": "browse",
+          "set": {
+            "query": "",
+            "area": "전체",
+            "category": "전체"
+          }
+        }
+      ],
+      "preview": {
+        "query": "목공"
+      },
+      "uxConditions": [
+        "검색어 또는 활성 필터의 조합에 해당하는 수업이 0개일 때 이 화면으로 들어와요.",
+        "초기화하면 검색어·지역·수업 종류를 함께 비워 전체 목록을 복구해요."
+      ]
+    },
+    {
+      "id": "class",
+      "brief": "수업 내용을 확인한 후 예약할 날짜와 시간을 고르는 단계로 넘어갑니다.",
+      "number": "02.04",
+      "title": "수업 상세",
+      "stage": 1,
+      "slot": 3,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "choose",
+          "label": "날짜와 시간 고르기",
+          "to": "schedule"
+        },
+        {
+          "id": "back",
+          "label": "수업 목록",
+          "to": "browse",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "목록에서 선택한 수업의 이름과 단가를 이후 단계에 전달해요. 다른 카드를 열면 그 수업의 단가를 기준으로 계산해요.",
+        "수업 상세에서 목록으로 돌아와도 검색어와 적용한 지역·수업 종류 필터가 유지돼요."
+      ]
+    },
+    {
+      "id": "schedule",
+      "brief": "예약할 날짜, 시간과 인원을 정한 후 연락처를 입력합니다.",
+      "number": "03.01",
+      "title": "일정 선택",
+      "stage": 2,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "continue",
+          "label": "예약 정보 입력",
+          "to": "checkout"
+        },
+        {
+          "id": "back",
+          "label": "수업 상세",
+          "to": "class",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "더미에서는 11월 21·22·28·29일만 선택할 수 있어요. 네 날짜와 시간대 모두 고정된 테스트 데이터예요.",
+        "시간은 11:00·14:00·16:00, 인원은 1~3명 중에서 고를 수 있어요. 선택값은 예약 정보와 결제 확인에 전달돼요."
+      ]
+    },
+    {
+      "id": "checkout",
+      "brief": "결제 전에 예약에 필요한 연락처를 받고 앞서 선택한 일정을 유지합니다.",
+      "number": "03.02",
+      "title": "예약 정보",
+      "stage": 2,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "confirm",
+          "label": "예약 내용 확인",
+          "to": "confirm"
+        },
+        {
+          "id": "back",
+          "label": "일정 선택",
+          "to": "schedule",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "이름과 이메일, 예약·취소 안내 확인이 필수예요. 누락되거나 이메일 형식이 잘못되면 결제 확인을 열지 않고 현재 화면에 머물러요.",
+        "이름은 32자, 이메일과 요청 사항은 각각 80자까지 입력할 수 있어요. 요청 사항을 비워도 진행할 수 있어요."
+      ]
+    },
+    {
+      "id": "confirm",
+      "brief": "결제 직전에 수업, 일정, 연락처를 다시 확인합니다.",
+      "number": "03.03",
+      "title": "결제 확인 팝업",
+      "stage": 2,
+      "slot": 2,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "pay",
+          "label": "결제하기",
+          "to": "success",
+          "set": {
+            "reservation": "예약 중"
+          }
+        },
+        {
+          "id": "close",
+          "label": "결제 확인 닫기",
+          "to": "checkout",
+          "kind": "close"
+        },
+        {
+          "id": "fail",
+          "label": "결제 실패 재현",
+          "to": "payment-error",
+          "kind": "simulation"
+        }
+      ],
+      "preview": {
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "결제 금액은 1인 수강료에 선택한 인원수를 곱해 계산해요.",
+        "취소하거나 모의 결제가 실패해도 입력한 예약 정보와 일정은 유지돼요. 결제가 완료된 시점의 값이 내 예약에 저장돼요."
+      ]
+    },
+    {
+      "id": "payment-error",
+      "brief": "결제에 실패해도 일정과 연락처를 유지하며 재시도하고, 예약은 한 번만 완료되어야 합니다.",
+      "number": "03.04",
+      "title": "결제 실패",
+      "stage": 2,
+      "slot": 3,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "retry",
+          "label": "결제 다시 시도",
+          "to": "confirm"
+        },
+        {
+          "id": "back",
+          "label": "예약 정보로 돌아가기",
+          "to": "checkout",
+          "kind": "back"
+        }
+      ],
+      "preview": {
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "모의 결제가 실패하면 결제 전 상태로 남아요. 다시 시도할 때 기존 예약자 정보, 일정, 인원을 불러와요.",
+        "다시 시도하면 같은 값으로 결제 확인을 다시 열어요. 입력을 고치려면 예약 정보 화면으로 돌아갈 수 있어요."
+      ]
+    },
+    {
+      "id": "success",
+      "brief": "예약 완료를 알려 주고 내 예약에서 확정 내용을 확인할 수 있게 합니다.",
+      "number": "03.05",
+      "title": "예약 완료",
+      "stage": 2,
+      "slot": 4,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "bookings",
+          "label": "내 예약 보기",
+          "to": "bookings"
+        },
+        {
+          "id": "home",
+          "label": "수업 더 보기",
+          "to": "browse",
+          "kind": "secondary"
+        }
+      ],
+      "preview": {
+        "reservation": "예약 중",
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "end": true,
+      "uxConditions": [
+        "더미에서는 토스트로 확인 메일이 발송된 상태를 재현해요.",
+        "예약 번호와 결제 금액은 확정 시점 기준이에요. 수업 탐색에서 다시 고른 값은 다음 예약에 사용돼요."
+      ]
+    },
+    {
+      "id": "bookings",
+      "brief": "내 예약에서 확정된 예약의 상세와 취소 상태를 확인합니다.",
+      "number": "04.01",
+      "title": "내 예약",
+      "stage": 3,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "detail",
+          "label": "예약 상세 보기",
+          "to": "booking",
+          "kind": "inline",
+          "when": {
+            "reservation": "예약 중"
+          }
+        },
+        {
+          "id": "browse",
+          "label": "수업",
+          "to": "browse",
+          "kind": "tab"
+        },
+        {
+          "id": "settings",
+          "label": "설정",
+          "to": "settings",
+          "kind": "tab"
+        }
+      ],
+      "preview": {
+        "reservation": "예약 중",
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "확정된 예약이 없으면 빈 상태를 보여줘요. 예약 중일 때만 상세 보기로 이동할 수 있어요.",
+        "취소된 예약은 목록에 취소됨으로 표시돼요. 더미는 가장 최근에 확정한 예약 한 건을 보관해요."
+      ]
+    },
+    {
+      "id": "booking",
+      "brief": "확정된 예약 정보를 보여 주고, 취소 요청은 확인 팝업으로 연결합니다.",
+      "number": "04.02",
+      "title": "예약 상세",
+      "stage": 3,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "cancel",
+          "label": "예약 취소",
+          "to": "cancel"
+        },
+        {
+          "id": "back",
+          "label": "내 예약",
+          "to": "bookings",
+          "kind": "back"
+        }
+      ],
+      "preview": {
+        "reservation": "예약 중",
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "예약 상세는 결제 시점에 확정된 수업·일정·인원·연락처를 불러와요.",
+        "예약 중인 상태에서 내 예약의 상세 보기를 열 수 있어요. 상세에서 취소 버튼을 누르면 확인 팝업을 먼저 열어요."
+      ]
+    },
+    {
+      "id": "cancel",
+      "brief": "팝업을 닫으면 예약을 유지하고, 취소를 확정하면 예약 상태를 바꿉니다.",
+      "number": "04.03",
+      "title": "예약 취소 팝업",
+      "stage": 3,
+      "slot": 2,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "cancel",
+          "label": "예약 취소하기",
+          "to": "cancelled",
+          "set": {
+            "reservation": "취소됨"
+          }
+        },
+        {
+          "id": "close",
+          "label": "예약 취소 닫기",
+          "to": "booking",
+          "kind": "close"
+        }
+      ],
+      "preview": {
+        "reservation": "예약 중",
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "닫기 또는 Escape로 나가면 예약 중 상태가 유지돼요.",
+        "예약 취소하기를 선택하면 취소됨으로 바뀌고 취소 완료 화면으로 이동해요."
+      ]
+    },
+    {
+      "id": "cancelled",
+      "brief": "취소 완료를 안내하고 내 예약에서 취소됨을 다시 확인할 수 있게 합니다.",
+      "number": "04.04",
+      "title": "취소 완료",
+      "stage": 3,
+      "slot": 3,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "bookings",
+          "label": "내 예약 보기",
+          "to": "bookings"
+        },
+        {
+          "id": "browse",
+          "label": "수업 더 보기",
+          "to": "browse",
+          "kind": "secondary"
+        }
+      ],
+      "preview": {
+        "reservation": "취소됨"
+      },
+      "end": true,
+      "uxConditions": [
+        "취소 후에도 내 예약에서 기존 수업명을 취소됨 상태로 확인할 수 있어요.",
+        "취소 완료 상태에서 수업을 다시 이용하려면 목록에서 예약을 새로 시작해요."
+      ]
+    },
+    {
+      "id": "settings",
+      "brief": "저장한 지역과 수신 설정은 설정을 다시 열었을 때도 유지되어야 합니다.",
+      "number": "05.01",
+      "title": "설정",
+      "stage": 4,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "save",
+          "label": "설정 저장",
+          "to": "browse"
+        },
+        {
+          "id": "browse",
+          "label": "수업",
+          "to": "browse",
+          "kind": "tab"
+        },
+        {
+          "id": "bookings",
+          "label": "내 예약",
+          "to": "bookings",
+          "kind": "tab"
+        }
+      ],
+      "uxConditions": [
+        "지역을 바꾸고 저장하면 수업 목록의 지역 필터에도 같은 값이 적용돼요.",
+        "변경한 지역, 경험과 수신 설정은 현재 더미 세션에서 다시 불러올 수 있어요."
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "first",
+      "title": "처음 이용 · 예약 완료",
+      "start": "welcome",
+      "steps": [
+        {
+          "action": "start",
+          "screen": "setup"
+        },
+        {
+          "action": "save",
+          "screen": "browse"
+        },
+        {
+          "action": "open-hand",
+          "screen": "class"
+        },
+        {
+          "action": "choose",
+          "screen": "schedule"
+        },
+        {
+          "action": "continue",
+          "screen": "checkout"
+        },
+        {
+          "action": "confirm",
+          "hint": "예약자 이름과 이메일을 입력하고 예약·취소 안내에 동의한 뒤 예약 내용을 확인하세요.",
+          "screen": "confirm"
+        },
+        {
+          "action": "pay",
+          "screen": "success",
+          "vars": {
+            "reservation": "예약 중"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeat",
+      "title": "재방문 · 필터와 예약",
+      "start": "browse",
+      "steps": [
+        {
+          "action": "filters",
+          "screen": "filters"
+        },
+        {
+          "action": "apply",
+          "hint": "공방 지역에서 성수, 수업 종류에서 물레를 고른 뒤 필터를 적용하세요.",
+          "screen": "browse"
+        },
+        {
+          "action": "open-wheel",
+          "screen": "class",
+          "vars": {
+            "course": "물레 체험"
+          }
+        },
+        {
+          "action": "choose",
+          "screen": "schedule"
+        },
+        {
+          "action": "continue",
+          "screen": "checkout"
+        },
+        {
+          "action": "confirm",
+          "hint": "예약자 이름과 이메일을 입력하고 예약·취소 안내에 동의한 뒤 예약 내용을 확인하세요.",
+          "screen": "confirm"
+        },
+        {
+          "action": "pay",
+          "screen": "success",
+          "vars": {
+            "reservation": "예약 중"
+          }
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "title": "빈 검색 · 목록 복구",
+      "start": "browse",
+      "steps": [
+        {
+          "action": "empty",
+          "hint": "수업 검색에 ‘목공’을 입력하고 ‘빈 결과 화면 보기’를 누르세요.",
+          "screen": "search-empty"
+        },
+        {
+          "action": "clear",
+          "screen": "browse",
+          "vars": {
+            "query": "",
+            "category": "전체"
+          }
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "title": "결제 실패 · 재시도",
+      "start": "confirm",
+      "steps": [
+        {
+          "action": "fail",
+          "screen": "payment-error"
+        },
+        {
+          "action": "retry",
+          "screen": "confirm"
+        },
+        {
+          "action": "pay",
+          "screen": "success",
+          "vars": {
+            "reservation": "예약 중"
+          }
+        }
+      ],
+      "initial": {
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      }
+    },
+    {
+      "id": "cancel",
+      "title": "예약 취소 · 팝업 닫기와 확정",
+      "start": "success",
+      "steps": [
+        {
+          "action": "bookings",
+          "screen": "bookings"
+        },
+        {
+          "action": "detail",
+          "screen": "booking"
+        },
+        {
+          "action": "cancel",
+          "screen": "cancel"
+        },
+        {
+          "action": "close",
+          "screen": "booking",
+          "vars": {
+            "reservation": "예약 중"
+          }
+        },
+        {
+          "action": "cancel",
+          "screen": "cancel"
+        },
+        {
+          "action": "cancel",
+          "screen": "cancelled",
+          "vars": {
+            "reservation": "취소됨"
+          }
+        },
+        {
+          "action": "bookings",
+          "screen": "bookings"
+        }
+      ],
+      "initial": {
+        "reservation": "예약 중",
+        "name": "서윤",
+        "email": "seoyun@example.com",
+        "agreed": true
+      }
+    },
+    {
+      "id": "settings",
+      "title": "설정 · 변경 저장",
+      "start": "settings",
+      "steps": [
+        {
+          "action": "save",
+          "screen": "browse"
+        },
+        {
+          "action": "settings",
+          "screen": "settings"
+        }
+      ]
+    },
+    {
+      "id": "session-review",
+      "title": "일정 선택과 예약 확인",
+      "start": "schedule",
+      "steps": [
+        {
+          "action": "continue",
+          "screen": "checkout"
+        },
+        {
+          "action": "confirm",
+          "hint": "예약자 이름과 이메일을 입력하고 예약·취소 안내에 동의한 뒤 예약 내용을 확인하세요.",
+          "screen": "confirm"
+        }
+      ]
+    }
+  ],
+  "proposals": [],
+  "decisions": [
+    {
+      "screen": "cancel",
+      "question": "취소 가능 시점과 환불 문구는 실제 공방 정책 확인이 필요합니다."
+    },
+    {
+      "screen": "payment-error",
+      "question": "결제 타임아웃에서 실제 승인 여부를 어떻게 확인할지 정해야 합니다."
+    }
+  ],
+  "review": {
+    "renderer": "workshop",
+    "groupDirection": "vertical",
+    "artboard": {
+      "width": 390,
+      "height": 844
+    },
+    "samples": [
+      {
+        "route": "first",
+        "title": "처음 이용 · 예약 완료",
+        "task": "초기 설정에서 관심 수업과 알림을 고른 뒤 수업을 예약해 보세요.",
+        "check": "일정과 입력한 정보가 결제 확인 팝업에 그대로 표시되는지 확인하세요."
+      },
+      {
+        "route": "repeat",
+        "title": "재방문 · 필터와 예약",
+        "task": "필터를 열어 성수와 물레를 선택한 뒤 물레 체험을 예약해 보세요.",
+        "check": "필터를 적용하면 목록과 태그가 함께 갱신되는지 확인하세요."
+      },
+      {
+        "route": "empty",
+        "title": "빈 검색 · 목록 복구",
+        "task": "‘목공’을 입력하고 검색한 뒤 필터 초기화로 목록을 복구해 보세요.",
+        "check": "검색어를 확인하고, 초기화 후 전체 목록으로 돌아오는지 보세요."
+      },
+      {
+        "route": "payment",
+        "title": "결제 실패 · 재시도",
+        "task": "하단 모의 입력에서 결제 실패를 재현하고, 결제를 다시 시도해 보세요.",
+        "check": "일정과 연락처가 유지되고 예약이 한 번만 완료되는지 확인하세요."
+      },
+      {
+        "route": "cancel",
+        "title": "예약 취소 · 팝업 닫기와 확정",
+        "task": "취소 팝업을 열었다가 닫은 뒤 다시 열어 취소하고 내 예약을 확인해 보세요.",
+        "check": "팝업 닫기는 예약을 유지하고, 취소 확정 후에는 상태가 바뀌는지 확인하세요."
+      },
+      {
+        "route": "settings",
+        "title": "설정 · 변경 저장",
+        "task": "알림을 끄고 설정을 저장한 뒤 다시 열어 보세요.",
+        "check": "알림 토글과 지역의 선택이 유지되는지 확인하세요."
+      }
+    ],
+    "source": "컴포넌트와 여러 화면 상태를 비교하기 위해 만든 가상의 도예 공방 예약 서비스입니다.",
+    "opinions": [
+      {
+        "screen": "search-empty",
+        "text": "검색이 비었을 때 검색어만 지울지, 필터까지 초기화할지 비교해 볼 수 있어요."
+      },
+      {
+        "screen": "payment-error",
+        "text": "실패 안내 바로 아래에 다시 시도 버튼과 기존 예약 정보를 함께 배치했어요."
+      }
+    ],
+    "audit": {
+      "testMode": {
+        "screen": "cancel",
+        "actions": {
+          "close": {
+            "to": "browse"
+          },
+          "cancel": {
+            "set": {
+              "reservation": "예약 중"
+            }
+          }
+        }
+      },
+      "fixtures": [
+        {
+          "title": "유효한 예약 정보",
+          "screen": "checkout",
+          "vars": {
+            "name": "서윤",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2명",
+            "memo": "작업 도구 확인"
+          }
+        },
+        {
+          "title": "빈 검색 결과",
+          "screen": "browse",
+          "vars": {
+            "query": "목공"
+          },
+          "expects": [
+            "empty"
+          ]
+        },
+        {
+          "title": "필터가 적용된 수업 목록",
+          "screen": "browse",
+          "vars": {
+            "area": "성수",
+            "category": "물레"
+          }
+        },
+        {
+          "title": "예약이 없는 목록",
+          "screen": "bookings",
+          "vars": {
+            "reservation": "없음"
+          }
+        },
+        {
+          "title": "취소된 예약 목록",
+          "screen": "bookings",
+          "vars": {
+            "reservation": "취소됨"
+          }
+        }
+      ],
+      "journeys": [
+        {
+          "title": "수업 검색부터 예약 취소까지",
+          "start": "welcome",
+          "steps": [
+            {
+              "action": "skip",
+              "screen": "browse"
+            },
+            {
+              "field": "query",
+              "type": "input",
+              "value": "물레"
+            },
+            {
+              "inspect": {
+                "title": "물레 검색 결과 확인",
+                "selector": ".course-list",
+                "text": [
+                  "물레 체험"
+                ]
+              }
+            },
+            {
+              "action": "open-wheel",
+              "screen": "class",
+              "vars": {
+                "course": "물레 체험"
+              }
+            },
+            {
+              "action": "choose",
+              "screen": "schedule",
+              "keep": [
+                "course"
+              ]
+            },
+            {
+              "field": "date",
+              "selector": "button[value='28']",
+              "type": "click",
+              "value": 28
+            },
+            {
+              "field": "time",
+              "type": "select",
+              "value": "16:00"
+            },
+            {
+              "field": "guests",
+              "type": "select",
+              "value": "2명"
+            },
+            {
+              "action": "continue",
+              "screen": "checkout",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests"
+              ]
+            },
+            {
+              "field": "name",
+              "type": "input",
+              "value": "윤서"
+            },
+            {
+              "field": "email",
+              "type": "input",
+              "value": "wheel@example.com"
+            },
+            {
+              "field": "memo",
+              "type": "input",
+              "value": "작업 도구 확인"
+            },
+            {
+              "field": "agreed",
+              "type": "click",
+              "value": true
+            },
+            {
+              "action": "confirm",
+              "screen": "confirm",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests",
+                "name",
+                "email",
+                "memo",
+                "agreed"
+              ]
+            },
+            {
+              "action": "fail",
+              "screen": "payment-error",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests",
+                "name",
+                "email",
+                "memo",
+                "agreed"
+              ],
+              "vars": {
+                "reservation": "없음"
+              }
+            },
+            {
+              "action": "retry",
+              "screen": "confirm",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests",
+                "name",
+                "email",
+                "memo",
+                "agreed",
+                "reservation"
+              ]
+            },
+            {
+              "action": "pay",
+              "screen": "success",
+              "vars": {
+                "reservation": "예약 중",
+                "bookedCourse": "물레 체험",
+                "bookedDate": 28,
+                "bookedTime": "16:00",
+                "bookedGuests": "2명",
+                "bookedName": "윤서",
+                "bookedEmail": "wheel@example.com"
+              }
+            },
+            {
+              "inspect": {
+                "title": "확정 일정과 결제 금액 확인",
+                "selector": ".info-rows",
+                "text": [
+                  "물레 체험",
+                  "11월 28일 · 16:00",
+                  "2명",
+                  "96,000원"
+                ]
+              }
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "예약 중"
+              }
+            },
+            {
+              "inspect": {
+                "title": "예약 목록의 수업과 상태 확인",
+                "selector": ".reservation-card",
+                "text": [
+                  "예약 중",
+                  "물레 체험",
+                  "11월 28일 · 16:00"
+                ]
+              }
+            },
+            {
+              "action": "detail",
+              "screen": "booking",
+              "vars": {
+                "reservation": "예약 중"
+              }
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "close",
+              "selector": ".paper-dismiss",
+              "screen": "booking",
+              "keep": [
+                "reservation",
+                "bookedCourse",
+                "bookedDate",
+                "bookedTime"
+              ]
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancelled",
+              "vars": {
+                "reservation": "취소됨"
+              },
+              "keep": [
+                "bookedCourse",
+                "bookedDate",
+                "bookedTime"
+              ]
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "취소됨"
+              }
+            },
+            {
+              "inspect": {
+                "title": "예약 목록의 취소 상태 확인",
+                "selector": ".reservation-card",
+                "text": [
+                  "취소됨",
+                  "물레 체험",
+                  "11월 28일 · 16:00"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "recovery": [
+        {
+          "title": "초기 설정에서 뒤로",
+          "start": "welcome",
+          "steps": [
+            {
+              "action": "start",
+              "screen": "setup"
+            },
+            {
+              "action": "back",
+              "screen": "welcome"
+            }
+          ]
+        },
+        {
+          "title": "필터 팝업 닫기",
+          "start": "browse",
+          "steps": [
+            {
+              "action": "filters",
+              "screen": "filters"
+            },
+            {
+              "action": "close",
+              "screen": "browse",
+              "keep": [
+                "area",
+                "category",
+                "query"
+              ],
+              "selector": ".paper-dismiss",
+              "select": {
+                "area": "연남"
+              }
+            }
+          ],
+          "initial": {
+            "area": "성수",
+            "category": "물레",
+            "query": "물레"
+          }
+        },
+        {
+          "title": "수업 상세에서 목록으로",
+          "start": "browse",
+          "steps": [
+            {
+              "action": "open-wheel",
+              "screen": "class"
+            },
+            {
+              "action": "back",
+              "screen": "browse",
+              "keep": [
+                "query",
+                "area",
+                "category"
+              ]
+            }
+          ],
+          "initial": {
+            "query": "물레",
+            "area": "성수",
+            "category": "물레"
+          }
+        },
+        {
+          "title": "예약 정보와 일정에서 뒤로",
+          "start": "schedule",
+          "steps": [
+            {
+              "action": "continue",
+              "screen": "checkout"
+            },
+            {
+              "action": "back",
+              "screen": "schedule",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course"
+              ]
+            },
+            {
+              "action": "back",
+              "screen": "class",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests"
+              ]
+            }
+          ],
+          "initial": {
+            "name": "서윤",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2명",
+            "memo": "작업 도구 확인"
+          }
+        },
+        {
+          "title": "결제 확인에서 취소",
+          "start": "checkout",
+          "steps": [
+            {
+              "action": "confirm",
+              "screen": "confirm"
+            },
+            {
+              "action": "close",
+              "screen": "checkout",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ],
+              "selector": ".paper-modal-actions button"
+            }
+          ],
+          "initial": {
+            "name": "서윤",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2명",
+            "memo": "작업 도구 확인"
+          }
+        },
+        {
+          "title": "결제 실패 후 재시도와 완료",
+          "start": "checkout",
+          "steps": [
+            {
+              "action": "confirm",
+              "screen": "confirm"
+            },
+            {
+              "action": "fail",
+              "screen": "payment-error",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ]
+            },
+            {
+              "action": "retry",
+              "screen": "confirm",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ]
+            },
+            {
+              "action": "pay",
+              "screen": "success",
+              "vars": {
+                "reservation": "예약 중",
+                "bookedDate": 28,
+                "bookedTime": "16:00",
+                "bookedGuests": "2명",
+                "bookedName": "서윤"
+              }
+            }
+          ],
+          "initial": {
+            "name": "서윤",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2명",
+            "memo": "작업 도구 확인"
+          }
+        },
+        {
+          "title": "결제 실패 후 예약 정보로",
+          "start": "confirm",
+          "steps": [
+            {
+              "action": "fail",
+              "screen": "payment-error"
+            },
+            {
+              "action": "back",
+              "screen": "checkout",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ]
+            }
+          ],
+          "initial": {
+            "name": "서윤",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2명",
+            "memo": "작업 도구 확인"
+          }
+        },
+        {
+          "title": "예약 상세에서 목록으로",
+          "start": "bookings",
+          "steps": [
+            {
+              "action": "detail",
+              "screen": "booking"
+            },
+            {
+              "action": "back",
+              "screen": "bookings",
+              "keep": [
+                "reservation",
+                "bookedDate",
+                "bookedTime",
+                "bookedCourse"
+              ]
+            }
+          ],
+          "initial": {
+            "reservation": "예약 중"
+          }
+        },
+        {
+          "title": "예약 취소 닫기와 확정",
+          "start": "bookings",
+          "steps": [
+            {
+              "action": "detail",
+              "screen": "booking"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "close",
+              "screen": "booking",
+              "keep": [
+                "reservation"
+              ],
+              "selector": ".paper-dismiss"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancelled",
+              "vars": {
+                "reservation": "취소됨"
+              }
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "취소됨"
+              }
+            }
+          ],
+          "initial": {
+            "reservation": "예약 중"
+          }
+        },
+        {
+          "title": "예약 취소 확정 후 목록 상태",
+          "start": "booking",
+          "initial": {
+            "reservation": "예약 중"
+          },
+          "steps": [
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancelled",
+              "vars": {
+                "reservation": "취소됨"
+              }
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "취소됨"
+              }
+            }
+          ]
+        },
+        {
+          "title": "필수 입력을 비워 둔 예약 정보",
+          "start": "checkout",
+          "steps": [
+            {
+              "action": "confirm",
+              "screen": "checkout",
+              "blocked": true
+            }
+          ]
+        }
+      ]
+    },
+    "locale": "ko",
+    "positions": {
+      "welcome": {
+        "x": 0,
+        "y": 0.0
+      },
+      "setup": {
+        "x": 1,
+        "y": 0.0
+      },
+      "browse": {
+        "x": 2.22,
+        "y": 0.0
+      },
+      "filters": {
+        "x": 3.22,
+        "y": 0.0
+      },
+      "search-empty": {
+        "x": 4.22,
+        "y": 0.0
+      },
+      "class": {
+        "x": 5.22,
+        "y": 0.0
+      },
+      "schedule": {
+        "x": 0,
+        "y": 1.3
+      },
+      "checkout": {
+        "x": 1,
+        "y": 1.3
+      },
+      "confirm": {
+        "x": 2,
+        "y": 1.3
+      },
+      "payment-error": {
+        "x": 1,
+        "y": 2.48
+      },
+      "success": {
+        "x": 2,
+        "y": 2.48
+      },
+      "bookings": {
+        "x": 3.26,
+        "y": 1.3
+      },
+      "booking": {
+        "x": 3.26,
+        "y": 2.48
+      },
+      "cancel": {
+        "x": 4.68,
+        "y": 2.48
+      },
+      "cancelled": {
+        "x": 4.62,
+        "y": 1.15
+      },
+      "settings": {
+        "x": 5.6,
+        "y": 2.48
+      }
+    }
+  },
+  "id": "pottery-booking-ko",
+  "device": "mobile"
+}

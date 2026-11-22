@@ -304,3 +304,39 @@ test('embedded map hotspots work beside details and above them on a narrow frame
     assert.equal(await page.locator('.artboard.is-active').getAttribute('data-screen'),'room');
   }
 });
+
+test('overview choices work with legacy flows without scenarios and leave broken links at their source', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-overview-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const flow = {
+    title:'Room inspection', goal:'Check a room', start:'map', stages:['Rooms','Inspection'],
+    screens:[
+      {id:'map',stage:0,origin:'source',title:'Floor plan',actions:[{id:'enter',label:'Open room',to:'room'}]},
+      {id:'room',stage:1,origin:'source',title:'Room',actions:[{id:'reopen',label:'Read note',to:null}]},
+    ],
+  };
+  const input = path.join(directory,'rooms.json'), output = path.join(directory,'rooms.html');
+  await fs.writeFile(input,JSON.stringify(flow));
+  await run(process.execPath,[cli,'build',input,output]);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  await page.goto(pathToFileURL(output).href);
+  await page.locator('#overview').click();
+  const structure = ()=>page.locator('.stage-cluster,.artboard').evaluateAll(nodes=>
+    nodes.map(n=>[n.offsetLeft,n.offsetTop,n.offsetWidth,n.offsetHeight]));
+  const original = await structure();
+  const picker = page.getByRole('combobox',{name:'Show a path'});
+  await picker.selectOption('map/enter');
+  const enter = page.locator('[data-screen="map"] button[data-action="enter"]');
+  assert.equal(await enter.getAttribute('data-route-control'),'1');
+  assert.deepEqual(await structure(),original);
+  await enter.click();
+  assert.equal(await page.locator('.artboard.is-active').getAttribute('data-screen'),'room');
+  await picker.selectOption('room/reopen');
+  assert.equal(await page.locator('[data-action="reopen"][data-route-failed]').count(),1);
+  assert.equal(await page.locator('#route-stop').isVisible(),true);
+  await picker.selectOption('');
+  assert.equal(await page.locator('[data-route-control]').count(),0);
+  assert.equal(await page.locator('#route-stop').isVisible(),false);
+});

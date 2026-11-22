@@ -1,0 +1,1549 @@
+{
+  "title": "Pottery class booking",
+  "goal": "Find a pottery class, book a place and manage the booking.",
+  "start": "welcome",
+  "entries": [
+    "browse"
+  ],
+  "vars": {
+    "area": "All",
+    "category": "All",
+    "level": "First class",
+    "reminders": true,
+    "newsletter": false,
+    "query": "",
+    "course": "Handbuilding",
+    "date": 21,
+    "time": "14:00",
+    "guests": "1 guest",
+    "name": "",
+    "email": "",
+    "memo": "",
+    "agreed": false,
+    "reservation": "None",
+    "bookedCourse": "Handbuilding",
+    "bookedDate": 21,
+    "bookedTime": "14:00",
+    "bookedGuests": "1 guest",
+    "bookedName": "Robin",
+    "bookedEmail": "seoyun@example.com"
+  },
+  "stages": [
+    "Get started",
+    "Find a class",
+    "Book a class",
+    "Manage bookings",
+    "Preferences"
+  ],
+  "screens": [
+    {
+      "id": "welcome",
+      "brief": "Let a first-time visitor set preferences or go straight to the classes.",
+      "number": "01.01",
+      "title": "Welcome",
+      "stage": 0,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "start",
+          "label": "Set preferences",
+          "to": "setup"
+        },
+        {
+          "id": "skip",
+          "label": "Browse classes",
+          "to": "browse",
+          "kind": "secondary"
+        }
+      ],
+      "uxConditions": [
+        "Skipping setup opens all classes with no filters.",
+        "Save preferences to enter the list, or return to the welcome screen."
+      ]
+    },
+    {
+      "id": "setup",
+      "brief": "Choose a neighborhood, experience level and notification preferences.",
+      "number": "01.02",
+      "title": "Preferences",
+      "stage": 0,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "save",
+          "label": "Find classes",
+          "to": "browse"
+        },
+        {
+          "id": "back",
+          "label": "Back",
+          "to": "welcome",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "The saved neighborhood filters the class list. Experience is stored for this session.",
+        "Booking reminders and class news are independent. Only reminders are on by default."
+      ]
+    },
+    {
+      "id": "browse",
+      "brief": "Browse the list or narrow it down by neighborhood and technique.",
+      "number": "02.01",
+      "title": "Class list",
+      "stage": 1,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "filters",
+          "label": "Filters",
+          "to": "filters",
+          "kind": "inline"
+        },
+        {
+          "id": "open-hand",
+          "label": "Handbuilding",
+          "to": "class",
+          "kind": "inline",
+          "set": {
+            "course": "Handbuilding"
+          }
+        },
+        {
+          "id": "open-wheel",
+          "label": "Wheel throwing",
+          "to": "class",
+          "kind": "inline",
+          "set": {
+            "course": "Wheel throwing"
+          }
+        },
+        {
+          "id": "open-glaze",
+          "label": "Glaze painting",
+          "to": "class",
+          "kind": "inline",
+          "set": {
+            "course": "Glaze painting"
+          }
+        },
+        {
+          "id": "empty",
+          "label": "No results",
+          "to": "search-empty",
+          "kind": "inline"
+        },
+        {
+          "id": "bookings",
+          "label": "My bookings",
+          "to": "bookings",
+          "kind": "tab"
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "to": "settings",
+          "kind": "tab"
+        }
+      ],
+      "uxConditions": [
+        "Search matches class names, areas and techniques. Both filters must match.",
+        "Clearing the search keeps the filters. Removing a filter only clears that filter.",
+        "Submitting a search with no matches opens the empty state."
+      ]
+    },
+    {
+      "id": "filters",
+      "brief": "Choose a neighborhood and technique, then apply them to the list.",
+      "number": "02.02",
+      "title": "Class filters",
+      "stage": 1,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "apply",
+          "label": "Apply filters",
+          "to": "browse"
+        },
+        {
+          "id": "close",
+          "label": "Close filters",
+          "to": "browse",
+          "kind": "close"
+        }
+      ],
+      "uxConditions": [
+        "Filter choices take effect when applied.",
+        "Closing the dialog restores the previous search and filters."
+      ]
+    },
+    {
+      "id": "search-empty",
+      "brief": "Show what the visitor searched for and provide a way back to all classes.",
+      "number": "02.03",
+      "title": "Empty results",
+      "stage": 1,
+      "slot": 2,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "clear",
+          "label": "Reset search and filters",
+          "to": "browse",
+          "set": {
+            "query": "",
+            "area": "All",
+            "category": "All"
+          }
+        }
+      ],
+      "preview": {
+        "query": "woodwork"
+      },
+      "uxConditions": [
+        "Show the empty state when the current query and filters have no matches.",
+        "Reset clears the query and both filters."
+      ]
+    },
+    {
+      "id": "class",
+      "brief": "Read the class details before choosing a session.",
+      "number": "02.04",
+      "title": "Class details",
+      "stage": 1,
+      "slot": 3,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "choose",
+          "label": "Choose a session",
+          "to": "schedule"
+        },
+        {
+          "id": "back",
+          "label": "Class list",
+          "to": "browse",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "Carry the class name and price into the booking.",
+        "Keep the query and filters when returning to the list."
+      ]
+    },
+    {
+      "id": "schedule",
+      "brief": "Choose a date, start time and party size before entering contact details.",
+      "number": "03.01",
+      "title": "Choose a session",
+      "stage": 2,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "continue",
+          "label": "Enter booking details",
+          "to": "checkout"
+        },
+        {
+          "id": "back",
+          "label": "Class details",
+          "to": "class",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "November 21, 22, 28 and 29 are available in this demo.",
+        "Choose 11:00, 14:00 or 16:00 and one to three guests. Carry the selections into checkout."
+      ]
+    },
+    {
+      "id": "checkout",
+      "brief": "Collect contact details while retaining the chosen session.",
+      "number": "03.02",
+      "title": "Booking details",
+      "stage": 2,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "confirm",
+          "label": "Review booking",
+          "to": "confirm"
+        },
+        {
+          "id": "back",
+          "label": "Choose a session",
+          "to": "schedule",
+          "kind": "back"
+        }
+      ],
+      "uxConditions": [
+        "Name, email and acknowledgment are required. Keep the form open on invalid input.",
+        "Name accepts 32 characters. Email and the optional request accept 80 each."
+      ]
+    },
+    {
+      "id": "confirm",
+      "brief": "Review the class, session, contact details and total before paying.",
+      "number": "03.03",
+      "title": "Review payment",
+      "stage": 2,
+      "slot": 2,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "pay",
+          "label": "Confirm payment",
+          "to": "success",
+          "set": {
+            "reservation": "Booked"
+          }
+        },
+        {
+          "id": "close",
+          "label": "Back to details",
+          "to": "checkout",
+          "kind": "close"
+        },
+        {
+          "id": "fail",
+          "label": "Simulate payment failure",
+          "to": "payment-error",
+          "kind": "simulation"
+        }
+      ],
+      "preview": {
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "Multiply the price per guest by the party size.",
+        "Closing or failing payment preserves the draft. Save booking details only on success."
+      ]
+    },
+    {
+      "id": "payment-error",
+      "brief": "Keep the session and contact details after a failed payment. Complete the booking only once.",
+      "number": "03.04",
+      "title": "Payment failed",
+      "stage": 2,
+      "slot": 3,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "retry",
+          "label": "Retry payment",
+          "to": "confirm"
+        },
+        {
+          "id": "back",
+          "label": "Edit booking details",
+          "to": "checkout",
+          "kind": "back"
+        }
+      ],
+      "preview": {
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "A failed payment leaves the booking unconfirmed and keeps the draft.",
+        "Retry opens the same payment review. Return to the form to make changes."
+      ]
+    },
+    {
+      "id": "success",
+      "brief": "Show confirmation and let the visitor find the booking again.",
+      "number": "03.05",
+      "title": "Booking confirmed",
+      "stage": 2,
+      "slot": 4,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "bookings",
+          "label": "View my bookings",
+          "to": "bookings"
+        },
+        {
+          "id": "home",
+          "label": "Browse more classes",
+          "to": "browse",
+          "kind": "secondary"
+        }
+      ],
+      "preview": {
+        "reservation": "Booked",
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "end": true,
+      "uxConditions": [
+        "A toast simulates the confirmation email.",
+        "The reference and price reflect the confirmed booking. Later changes apply to the next draft."
+      ]
+    },
+    {
+      "id": "bookings",
+      "brief": "Find the confirmed booking and its cancellation status.",
+      "number": "04.01",
+      "title": "My bookings",
+      "stage": 3,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "detail",
+          "label": "View booking",
+          "to": "booking",
+          "kind": "inline",
+          "when": {
+            "reservation": "Booked"
+          }
+        },
+        {
+          "id": "browse",
+          "label": "Classes",
+          "to": "browse",
+          "kind": "tab"
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "to": "settings",
+          "kind": "tab"
+        }
+      ],
+      "preview": {
+        "reservation": "Booked",
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "Show an empty state before the first booking. Open details for an active booking.",
+        "Show cancelled bookings in the list. This demo keeps the most recent booking."
+      ]
+    },
+    {
+      "id": "booking",
+      "brief": "Show the confirmed details and ask before cancelling.",
+      "number": "04.02",
+      "title": "Booking details",
+      "stage": 3,
+      "slot": 1,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "cancel",
+          "label": "Cancel booking",
+          "to": "cancel"
+        },
+        {
+          "id": "back",
+          "label": "My bookings",
+          "to": "bookings",
+          "kind": "back"
+        }
+      ],
+      "preview": {
+        "reservation": "Booked",
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "Use the class, session, guests and contact details saved at payment.",
+        "Open cancellation review before changing the booking."
+      ]
+    },
+    {
+      "id": "cancel",
+      "brief": "Closing preserves the booking. Confirming changes its status.",
+      "number": "04.03",
+      "title": "Review cancellation",
+      "stage": 3,
+      "slot": 2,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "cancel",
+          "label": "Confirm cancellation",
+          "to": "cancelled",
+          "set": {
+            "reservation": "Cancelled"
+          }
+        },
+        {
+          "id": "close",
+          "label": "Keep booking",
+          "to": "booking",
+          "kind": "close"
+        }
+      ],
+      "preview": {
+        "reservation": "Booked",
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      },
+      "uxConditions": [
+        "Closing the dialog or pressing Escape keeps the booking active.",
+        "Confirming changes the status and opens the cancellation receipt."
+      ]
+    },
+    {
+      "id": "cancelled",
+      "brief": "Show the cancellation result and let the visitor find it in the list.",
+      "number": "04.04",
+      "title": "Booking cancelled",
+      "stage": 3,
+      "slot": 3,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "bookings",
+          "label": "View my bookings",
+          "to": "bookings"
+        },
+        {
+          "id": "browse",
+          "label": "Browse more classes",
+          "to": "browse",
+          "kind": "secondary"
+        }
+      ],
+      "preview": {
+        "reservation": "Cancelled"
+      },
+      "end": true,
+      "uxConditions": [
+        "The cancelled class remains listed with its status.",
+        "Start a new booking from the class list."
+      ]
+    },
+    {
+      "id": "settings",
+      "brief": "Reopening settings restores the saved area and notification preferences.",
+      "number": "05.01",
+      "title": "Settings",
+      "stage": 4,
+      "slot": 0,
+      "origin": "inferred",
+      "actions": [
+        {
+          "id": "save",
+          "label": "Save settings",
+          "to": "browse"
+        },
+        {
+          "id": "browse",
+          "label": "Classes",
+          "to": "browse",
+          "kind": "tab"
+        },
+        {
+          "id": "bookings",
+          "label": "My bookings",
+          "to": "bookings",
+          "kind": "tab"
+        }
+      ],
+      "uxConditions": [
+        "The saved neighborhood also applies to the class list.",
+        "Area, experience and notification preferences persist in this session."
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "first",
+      "title": "First visit and booking",
+      "start": "welcome",
+      "steps": [
+        {
+          "action": "start",
+          "screen": "setup"
+        },
+        {
+          "action": "save",
+          "screen": "browse"
+        },
+        {
+          "action": "open-hand",
+          "screen": "class"
+        },
+        {
+          "action": "choose",
+          "screen": "schedule"
+        },
+        {
+          "action": "continue",
+          "screen": "checkout"
+        },
+        {
+          "action": "confirm",
+          "hint": "Enter a name and email, then accept the booking terms.",
+          "screen": "confirm"
+        },
+        {
+          "action": "pay",
+          "screen": "success",
+          "vars": {
+            "reservation": "Booked"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeat",
+      "title": "Filter and book a class",
+      "start": "browse",
+      "steps": [
+        {
+          "action": "filters",
+          "screen": "filters"
+        },
+        {
+          "action": "apply",
+          "hint": "Choose Seongsu and Wheel, then apply the filters.",
+          "screen": "browse"
+        },
+        {
+          "action": "open-wheel",
+          "screen": "class",
+          "vars": {
+            "course": "Wheel throwing"
+          }
+        },
+        {
+          "action": "choose",
+          "screen": "schedule"
+        },
+        {
+          "action": "continue",
+          "screen": "checkout"
+        },
+        {
+          "action": "confirm",
+          "hint": "Enter a name and email, then accept the booking terms.",
+          "screen": "confirm"
+        },
+        {
+          "action": "pay",
+          "screen": "success",
+          "vars": {
+            "reservation": "Booked"
+          }
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "title": "Recover from empty search",
+      "start": "browse",
+      "steps": [
+        {
+          "action": "empty",
+          "hint": "Search for woodwork and open the empty results screen.",
+          "screen": "search-empty"
+        },
+        {
+          "action": "clear",
+          "screen": "browse",
+          "vars": {
+            "query": "",
+            "category": "All"
+          }
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "title": "Retry a failed payment",
+      "start": "confirm",
+      "steps": [
+        {
+          "action": "fail",
+          "screen": "payment-error"
+        },
+        {
+          "action": "retry",
+          "screen": "confirm"
+        },
+        {
+          "action": "pay",
+          "screen": "success",
+          "vars": {
+            "reservation": "Booked"
+          }
+        }
+      ],
+      "initial": {
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      }
+    },
+    {
+      "id": "cancel",
+      "title": "Review and cancel a booking",
+      "start": "success",
+      "steps": [
+        {
+          "action": "bookings",
+          "screen": "bookings"
+        },
+        {
+          "action": "detail",
+          "screen": "booking"
+        },
+        {
+          "action": "cancel",
+          "screen": "cancel"
+        },
+        {
+          "action": "close",
+          "screen": "booking",
+          "vars": {
+            "reservation": "Booked"
+          }
+        },
+        {
+          "action": "cancel",
+          "screen": "cancel"
+        },
+        {
+          "action": "cancel",
+          "screen": "cancelled",
+          "vars": {
+            "reservation": "Cancelled"
+          }
+        },
+        {
+          "action": "bookings",
+          "screen": "bookings"
+        }
+      ],
+      "initial": {
+        "reservation": "Booked",
+        "name": "Robin",
+        "email": "seoyun@example.com",
+        "agreed": true
+      }
+    },
+    {
+      "id": "settings",
+      "title": "Save preferences",
+      "start": "settings",
+      "steps": [
+        {
+          "action": "save",
+          "screen": "browse"
+        },
+        {
+          "action": "settings",
+          "screen": "settings"
+        }
+      ]
+    },
+    {
+      "id": "session-review",
+      "title": "Choose a session and review",
+      "start": "schedule",
+      "steps": [
+        {
+          "action": "continue",
+          "screen": "checkout"
+        },
+        {
+          "action": "confirm",
+          "hint": "Enter a name and email, then accept the booking terms.",
+          "screen": "confirm"
+        }
+      ]
+    }
+  ],
+  "proposals": [],
+  "decisions": [
+    {
+      "screen": "cancel",
+      "question": "What cancellation deadline and refund terms does the studio use?"
+    },
+    {
+      "screen": "payment-error",
+      "question": "How should payment status be checked after a timeout?"
+    }
+  ],
+  "review": {
+    "renderer": "workshop",
+    "groupDirection": "vertical",
+    "artboard": {
+      "width": 390,
+      "height": 844
+    },
+    "samples": [
+      {
+        "route": "first",
+        "title": "First visit and booking",
+        "task": "Choose preferences and book a class.",
+        "check": "Check that the session and contact details reach payment review."
+      },
+      {
+        "route": "repeat",
+        "title": "Filter and book a class",
+        "task": "Filter to Seongsu and Wheel, then book the wheel class.",
+        "check": "Check that both the class list and filter chips update."
+      },
+      {
+        "route": "empty",
+        "title": "Recover from empty search",
+        "task": "Search for woodwork, then reset the filters.",
+        "check": "Check the query and recover the full class list."
+      },
+      {
+        "route": "payment",
+        "title": "Retry a failed payment",
+        "task": "Simulate a failed payment, then retry.",
+        "check": "Check the session and contact details and confirm once."
+      },
+      {
+        "route": "cancel",
+        "title": "Review and cancel a booking",
+        "task": "Dismiss the cancellation dialog, reopen it, cancel and review the list.",
+        "check": "Closing keeps the booking. Confirming changes its status."
+      },
+      {
+        "route": "settings",
+        "title": "Save preferences",
+        "task": "Turn off reminders, save settings and reopen them.",
+        "check": "Check the saved reminder and neighborhood values."
+      }
+    ],
+    "source": "A fictional pottery class service for reviewing booking and recovery flows.",
+    "opinions": [
+      {
+        "screen": "search-empty",
+        "text": "Decide whether an empty search should clear the query alone or all filters."
+      },
+      {
+        "screen": "payment-error",
+        "text": "Place retry and edit actions alongside the failure message."
+      }
+    ],
+    "audit": {
+      "testMode": {
+        "screen": "cancel",
+        "actions": {
+          "close": {
+            "to": "browse"
+          },
+          "cancel": {
+            "set": {
+              "reservation": "Booked"
+            }
+          }
+        }
+      },
+      "fixtures": [
+        {
+          "title": "Valid booking details",
+          "screen": "checkout",
+          "vars": {
+            "name": "Robin",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2 guests",
+            "memo": "Check the tools"
+          }
+        },
+        {
+          "title": "Empty search",
+          "screen": "browse",
+          "vars": {
+            "query": "woodwork"
+          },
+          "expects": [
+            "empty"
+          ]
+        },
+        {
+          "title": "Filtered classes",
+          "screen": "browse",
+          "vars": {
+            "area": "Seongsu",
+            "category": "Wheel"
+          }
+        },
+        {
+          "title": "Empty bookings",
+          "screen": "bookings",
+          "vars": {
+            "reservation": "None"
+          }
+        },
+        {
+          "title": "Cancelled bookings",
+          "screen": "bookings",
+          "vars": {
+            "reservation": "Cancelled"
+          }
+        }
+      ],
+      "journeys": [
+        {
+          "title": "From class search to cancellation",
+          "start": "welcome",
+          "steps": [
+            {
+              "action": "skip",
+              "screen": "browse"
+            },
+            {
+              "field": "query",
+              "type": "input",
+              "value": "Wheel"
+            },
+            {
+              "inspect": {
+                "title": "Check wheel class search results",
+                "selector": ".course-list",
+                "text": [
+                  "Wheel throwing"
+                ]
+              }
+            },
+            {
+              "action": "open-wheel",
+              "screen": "class",
+              "vars": {
+                "course": "Wheel throwing"
+              }
+            },
+            {
+              "action": "choose",
+              "screen": "schedule",
+              "keep": [
+                "course"
+              ]
+            },
+            {
+              "field": "date",
+              "selector": "button[value='28']",
+              "type": "click",
+              "value": 28
+            },
+            {
+              "field": "time",
+              "type": "select",
+              "value": "16:00"
+            },
+            {
+              "field": "guests",
+              "type": "select",
+              "value": "2 guests"
+            },
+            {
+              "action": "continue",
+              "screen": "checkout",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests"
+              ]
+            },
+            {
+              "field": "name",
+              "type": "input",
+              "value": "Alex"
+            },
+            {
+              "field": "email",
+              "type": "input",
+              "value": "wheel@example.com"
+            },
+            {
+              "field": "memo",
+              "type": "input",
+              "value": "Check the tools"
+            },
+            {
+              "field": "agreed",
+              "type": "click",
+              "value": true
+            },
+            {
+              "action": "confirm",
+              "screen": "confirm",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests",
+                "name",
+                "email",
+                "memo",
+                "agreed"
+              ]
+            },
+            {
+              "action": "fail",
+              "screen": "payment-error",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests",
+                "name",
+                "email",
+                "memo",
+                "agreed"
+              ],
+              "vars": {
+                "reservation": "None"
+              }
+            },
+            {
+              "action": "retry",
+              "screen": "confirm",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests",
+                "name",
+                "email",
+                "memo",
+                "agreed",
+                "reservation"
+              ]
+            },
+            {
+              "action": "pay",
+              "screen": "success",
+              "vars": {
+                "reservation": "Booked",
+                "bookedCourse": "Wheel throwing",
+                "bookedDate": 28,
+                "bookedTime": "16:00",
+                "bookedGuests": "2 guests",
+                "bookedName": "Alex",
+                "bookedEmail": "wheel@example.com"
+              }
+            },
+            {
+              "inspect": {
+                "title": "Check the confirmed session and total",
+                "selector": ".info-rows",
+                "text": [
+                  "Wheel throwing",
+                  "Nov 28 · 16:00",
+                  "2 guests",
+                  "KRW 96,000"
+                ]
+              }
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "Booked"
+              }
+            },
+            {
+              "inspect": {
+                "title": "Check the class and booking status",
+                "selector": ".reservation-card",
+                "text": [
+                  "Booked",
+                  "Wheel throwing",
+                  "Nov 28 · 16:00"
+                ]
+              }
+            },
+            {
+              "action": "detail",
+              "screen": "booking",
+              "vars": {
+                "reservation": "Booked"
+              }
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "close",
+              "selector": ".paper-dismiss",
+              "screen": "booking",
+              "keep": [
+                "reservation",
+                "bookedCourse",
+                "bookedDate",
+                "bookedTime"
+              ]
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancelled",
+              "vars": {
+                "reservation": "Cancelled"
+              },
+              "keep": [
+                "bookedCourse",
+                "bookedDate",
+                "bookedTime"
+              ]
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "Cancelled"
+              }
+            },
+            {
+              "inspect": {
+                "title": "Check the cancelled booking",
+                "selector": ".reservation-card",
+                "text": [
+                  "Cancelled",
+                  "Wheel throwing",
+                  "Nov 28 · 16:00"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "recovery": [
+        {
+          "title": "Back from setup",
+          "start": "welcome",
+          "steps": [
+            {
+              "action": "start",
+              "screen": "setup"
+            },
+            {
+              "action": "back",
+              "screen": "welcome"
+            }
+          ]
+        },
+        {
+          "title": "Dismiss filters",
+          "start": "browse",
+          "steps": [
+            {
+              "action": "filters",
+              "screen": "filters"
+            },
+            {
+              "action": "close",
+              "screen": "browse",
+              "keep": [
+                "area",
+                "category",
+                "query"
+              ],
+              "selector": ".paper-dismiss",
+              "select": {
+                "area": "Yeonnam"
+              }
+            }
+          ],
+          "initial": {
+            "area": "Seongsu",
+            "category": "Wheel",
+            "query": "Wheel"
+          }
+        },
+        {
+          "title": "Back from class details",
+          "start": "browse",
+          "steps": [
+            {
+              "action": "open-wheel",
+              "screen": "class"
+            },
+            {
+              "action": "back",
+              "screen": "browse",
+              "keep": [
+                "query",
+                "area",
+                "category"
+              ]
+            }
+          ],
+          "initial": {
+            "query": "Wheel",
+            "area": "Seongsu",
+            "category": "Wheel"
+          }
+        },
+        {
+          "title": "Back from checkout and scheduling",
+          "start": "schedule",
+          "steps": [
+            {
+              "action": "continue",
+              "screen": "checkout"
+            },
+            {
+              "action": "back",
+              "screen": "schedule",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course"
+              ]
+            },
+            {
+              "action": "back",
+              "screen": "class",
+              "keep": [
+                "course",
+                "date",
+                "time",
+                "guests"
+              ]
+            }
+          ],
+          "initial": {
+            "name": "Robin",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2 guests",
+            "memo": "Check the tools"
+          }
+        },
+        {
+          "title": "Dismiss payment review",
+          "start": "checkout",
+          "steps": [
+            {
+              "action": "confirm",
+              "screen": "confirm"
+            },
+            {
+              "action": "close",
+              "screen": "checkout",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ],
+              "selector": ".paper-modal-actions button"
+            }
+          ],
+          "initial": {
+            "name": "Robin",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2 guests",
+            "memo": "Check the tools"
+          }
+        },
+        {
+          "title": "Retry payment and confirm",
+          "start": "checkout",
+          "steps": [
+            {
+              "action": "confirm",
+              "screen": "confirm"
+            },
+            {
+              "action": "fail",
+              "screen": "payment-error",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ]
+            },
+            {
+              "action": "retry",
+              "screen": "confirm",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ]
+            },
+            {
+              "action": "pay",
+              "screen": "success",
+              "vars": {
+                "reservation": "Booked",
+                "bookedDate": 28,
+                "bookedTime": "16:00",
+                "bookedGuests": "2 guests",
+                "bookedName": "Robin"
+              }
+            }
+          ],
+          "initial": {
+            "name": "Robin",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2 guests",
+            "memo": "Check the tools"
+          }
+        },
+        {
+          "title": "Edit details after payment failure",
+          "start": "confirm",
+          "steps": [
+            {
+              "action": "fail",
+              "screen": "payment-error"
+            },
+            {
+              "action": "back",
+              "screen": "checkout",
+              "keep": [
+                "name",
+                "email",
+                "agreed",
+                "date",
+                "time",
+                "guests",
+                "memo",
+                "course",
+                "reservation"
+              ]
+            }
+          ],
+          "initial": {
+            "name": "Robin",
+            "email": "seoyun@example.com",
+            "agreed": true,
+            "date": 28,
+            "time": "16:00",
+            "guests": "2 guests",
+            "memo": "Check the tools"
+          }
+        },
+        {
+          "title": "Back from booking details",
+          "start": "bookings",
+          "steps": [
+            {
+              "action": "detail",
+              "screen": "booking"
+            },
+            {
+              "action": "back",
+              "screen": "bookings",
+              "keep": [
+                "reservation",
+                "bookedDate",
+                "bookedTime",
+                "bookedCourse"
+              ]
+            }
+          ],
+          "initial": {
+            "reservation": "Booked"
+          }
+        },
+        {
+          "title": "Dismiss and confirm cancellation",
+          "start": "bookings",
+          "steps": [
+            {
+              "action": "detail",
+              "screen": "booking"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "close",
+              "screen": "booking",
+              "keep": [
+                "reservation"
+              ],
+              "selector": ".paper-dismiss"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancelled",
+              "vars": {
+                "reservation": "Cancelled"
+              }
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "Cancelled"
+              }
+            }
+          ],
+          "initial": {
+            "reservation": "Booked"
+          }
+        },
+        {
+          "title": "Check the list after cancellation",
+          "start": "booking",
+          "initial": {
+            "reservation": "Booked"
+          },
+          "steps": [
+            {
+              "action": "cancel",
+              "screen": "cancel"
+            },
+            {
+              "action": "cancel",
+              "screen": "cancelled",
+              "vars": {
+                "reservation": "Cancelled"
+              }
+            },
+            {
+              "action": "bookings",
+              "screen": "bookings",
+              "vars": {
+                "reservation": "Cancelled"
+              }
+            }
+          ]
+        },
+        {
+          "title": "Missing required booking details",
+          "start": "checkout",
+          "steps": [
+            {
+              "action": "confirm",
+              "screen": "checkout",
+              "blocked": true
+            }
+          ]
+        }
+      ]
+    },
+    "locale": "en",
+    "positions": {
+      "welcome": {
+        "x": 0,
+        "y": 0.0
+      },
+      "setup": {
+        "x": 1,
+        "y": 0.0
+      },
+      "browse": {
+        "x": 2.22,
+        "y": 0.0
+      },
+      "filters": {
+        "x": 3.22,
+        "y": 0.0
+      },
+      "search-empty": {
+        "x": 4.22,
+        "y": 0.0
+      },
+      "class": {
+        "x": 5.22,
+        "y": 0.0
+      },
+      "schedule": {
+        "x": 0,
+        "y": 1.3
+      },
+      "checkout": {
+        "x": 1,
+        "y": 1.3
+      },
+      "confirm": {
+        "x": 2,
+        "y": 1.3
+      },
+      "payment-error": {
+        "x": 1,
+        "y": 2.48
+      },
+      "success": {
+        "x": 2,
+        "y": 2.48
+      },
+      "bookings": {
+        "x": 3.26,
+        "y": 1.3
+      },
+      "booking": {
+        "x": 3.26,
+        "y": 2.48
+      },
+      "cancel": {
+        "x": 4.68,
+        "y": 2.48
+      },
+      "cancelled": {
+        "x": 4.62,
+        "y": 1.15
+      },
+      "settings": {
+        "x": 5.6,
+        "y": 2.48
+      }
+    }
+  },
+  "id": "pottery-booking-en",
+  "device": "mobile"
+}

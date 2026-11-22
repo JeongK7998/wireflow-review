@@ -6,7 +6,8 @@ const original = {...inputModel,review:inputModel.review || {},scenarios:inputMo
 const {flowPath,verification:buildVerification} = JSON.parse($('build-data').textContent);
 const workshop = original.review.renderer === 'workshop';
 const flowIdentity = original.id || original.title;
-const storagePrefix = workshop ? 'ui-wire-flow-workshop' : 'ui-wire-flow:'+JSON.stringify([location.pathname,flowIdentity]);
+const legacyWorkshop = workshop && !original.id;
+const storagePrefix = legacyWorkshop ? 'ui-wire-flow-workshop' : 'ui-wire-flow:'+JSON.stringify([location.pathname,flowIdentity]);
 const storageKey = storagePrefix+'-requests';
 const layoutKey = storagePrefix+'-layout';
 const artboards = new Map();
@@ -52,6 +53,7 @@ let slide;
 let appliedProposals = new Set();
 let testRun;
 let scenarioRun;
+let overviewRoute;
 let zoom;
 let fittingOverview = false;
 let offset = { x: 0, y: 0 };
@@ -95,7 +97,7 @@ function write(node, ...children) {
 function readRequestState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    const legacyMemos = saved || !workshop ? {} : JSON.parse(localStorage.getItem('ui-wire-flow-workshop-memos') || '{}');
+    const legacyMemos = saved || !legacyWorkshop ? {} : JSON.parse(localStorage.getItem('ui-wire-flow-workshop-memos') || '{}');
     return {
       requests: (saved?.requests || []).filter(request=>screens.has(request.screen)).map(request=>{
         // Relabel the generated expected/actual pair in older issue reports; keep personal notes.
@@ -195,12 +197,14 @@ function renderCamera(now) {
   }
   const keepDragging = trackLayoutDrag(now);
   const transform = 'translate(' + offset.x + 'px,' + offset.y + 'px) scale(' + zoom + ')';
+  canvas.toggleAttribute('data-overview',fittingOverview);
+  canvas.style.setProperty('--route-ring',Math.max(3,2/zoom)+'px');
   $('world').style.transform = transform;
   $('groups').style.transform = transform;
   positionInspector();
   $('zoom-readout').textContent = Math.round(zoom * 100) + '%';
   if (!canvas.hasAttribute('data-layout-moving')) {
-    paintConnections(edges,focusedStep,offset,zoom,verificationFlow?.edges);
+    paintConnections(edges,focusedStep,offset,zoom,layoutEditing ? undefined : verificationFlow?.edges ?? overviewRoute?.edges);
   }
   if (slide || keepDragging) placeWorld();
 }
@@ -264,6 +268,7 @@ function collectEdges() {
   edges = new Map();
   for (const screen of model.screens) for (const action of screen.actions) addEdge(screen.id,action.to);
   for (const {from,to} of traversals) addEdge(from,to);
+  refreshOverviewRoute();
 }
 
 function record(from,to,label,error='') {
@@ -273,6 +278,62 @@ function record(from,to,label,error='') {
     traversals.push(step);
     addEdge(from,to);
     focusedStep = step;
+  }
+}
+
+function markRouteControls(device,id) {
+  const route = verificationFlow?.route || overviewRoute;
+  for (const node of device.querySelectorAll('[data-route-control]')) {
+    node.removeAttribute('data-route-control');
+    node.removeAttribute('data-route-failed');
+  }
+  if (!route) return;
+  const steps = route.steps.filter(step => step.from===id);
+  for (const control of device.querySelectorAll('[data-action], [data-control]')) {
+    const inert = control.closest('[inert]');
+    if (inert && inert!==device) continue;
+    const match = steps.find(step => (step.action && step.action===control.dataset.action) ||
+      (step.field && step.field===control.dataset.control));
+    if (!match) continue;
+    control.dataset.routeControl = String(route.steps.indexOf(match)+1);
+    const issue = route.issue;
+    control.toggleAttribute('data-route-failed',Boolean(issue?.screen===id &&
+      ((issue.action && issue.action===control.dataset.action) || (issue.field && issue.field===control.dataset.control))));
+  }
+}
+
+function populateRoutePicker() {
+  const picker = $('route-picker');
+  picker.replaceChildren(new Option(ui('전체 연결','All connections'),''));
+  for (const scenario of model.scenarios) picker.add(new Option(scenario.title,scenario.id));
+  if (!model.scenarios.length) {
+    for (const screen of model.screens) {
+      if (!screen.actions.length) continue;
+      const options = element('optgroup');
+      options.label = screen.title;
+      for (const action of screen.actions) options.append(new Option(action.label,screen.id+'/'+action.id));
+      picker.append(options);
+    }
+  }
+  picker.hidden = picker.options.length===1;
+}
+
+function refreshOverviewRoute() {
+  const value = $('route-picker').value;
+  let scenario = model.scenarios.find(item => item.id===value);
+  if (!scenario && value.includes('/')) {
+    const [start,action] = value.split('/');
+    scenario = {start,initial:screens.get(start).preview,steps:[{action}]};
+  }
+  overviewRoute = scenario ? modelVerificationRoute(scenario) : undefined;
+  if (overviewRoute) overviewRoute.edges = verificationEdges(overviewRoute);
+  const issue = overviewRoute?.issue;
+  $('route-stop').hidden = !issue;
+  $('route-stop').textContent = issue ? ui('경로 확인 필요 · ','Path needs review · ')+auditScreenName(issue.screen) : '';
+  markRouteControls($('simulation'),active);
+  for (const [id,board] of artboards) {
+    const device = board.querySelector('.device');
+    if (device) markRouteControls(device,id);
   }
 }
 
@@ -294,6 +355,7 @@ function renderBoard(id) {
       }
     }
   }
+  markRouteControls(device,id);
   device.inert = layoutEditing || Boolean(verificationFlow);
   board.querySelector('.device')?.remove();
   board.append(device);
@@ -314,6 +376,9 @@ function renderBoardLabel(id) {
     badge.setAttribute('aria-controls','review');
     heading.append(badge);
   }
+  const suggested = model.review.requirements?.some(item=>item.suggestedScreens?.includes(id));
+  if (suggested) heading.append(element('span','suggested-screen',ui('미확정','Proposed')));
+  board.toggleAttribute('data-suggested-screen',Boolean(suggested));
   const old = board.querySelector('.screen-heading');
   if (old) old.replaceWith(heading);
   else board.prepend(heading);
@@ -496,6 +561,7 @@ function renderSimulation() {
   const controls = verificationFlow ? [] : simulationControls(screens.get(active));
   panel.replaceChildren(...(controls.length?[element('span','caption',ui('모의 입력','Simulation')),...controls]:[]));
   panel.hidden = !controls.length;
+  markRouteControls(panel,active);
 }
 
 function trackScenarioAction(from,id,result) {
@@ -1256,11 +1322,16 @@ function layoutWorld() {
   for (const [id,board] of artboards) {
     const {x,y} = position(id);
     Object.assign(board.style,{left:x+'px',top:y+'px'});
-    frames.set(id,{x,y,w:screenWidth,h:screenHeight});
+    frames.set(id,{x,y,w:screenWidth,h:screenHeight,group:screens.get(id).stage});
   }
   for (const cluster of $('groups').children) {
-    const {x,y} = position(cluster.dataset.groupRoot);
-    Object.assign(cluster.style,{left:x+'px',top:(y-88)+'px'});
+    const group = layout.groups.find(item => item.root===cluster.dataset.groupRoot);
+    const members = group.ids.map(id => frames.get(id));
+    const left = Math.min(...members.map(frame => frame.x)) - 24;
+    const top = Math.min(...members.map(frame => frame.y)) - 91;
+    const right = Math.max(...members.map(frame => frame.x)) + screenWidth + 24;
+    const bottom = Math.max(...members.map(frame => frame.y)) + screenHeight + 12;
+    Object.assign(cluster.style,{left:left+'px',top:top+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   }
   paintConnections = createConnections($('connections'),frames,pitch,model.review.annotations);
 }
@@ -1306,13 +1377,15 @@ function overviewCamera() {
     const headingWidth = board.querySelector('.screen-heading').offsetWidth;
     return {x,y,right:x+Math.max(screenWidth,headingWidth)};
   });
-  const left = Math.min(...points.map(point=>point.x));
-  const top = Math.min(...points.map(point=>point.y))-88;
-  const right = Math.max(...points.map(point=>point.right),...[...$('groups').children].map(cluster=>
-    position(cluster.dataset.groupRoot).x+cluster.offsetWidth));
-  const bottom = Math.max(...points.map(point=>point.y))+screenHeight;
-  const scale = Math.min(fitZoom(),Math.max(1,width-32)/(right-left),Math.max(1,height-66)/(bottom-top));
-  return {zoom:scale,offset:{x:width/2-(left+right)/2*scale,y:(height-32)/2-(top+bottom)/2*scale}};
+  const groups = [...$('groups').children];
+  const left = Math.min(...groups.map(group=>group.offsetLeft));
+  const top = Math.min(...groups.map(group=>group.offsetTop));
+  const right = Math.max(...points.map(point=>point.right),...groups.map(group=>
+    group.offsetLeft + Math.max(group.offsetWidth,group.firstElementChild.offsetWidth)));
+  const bottom = Math.max(...groups.map(group=>group.offsetTop+group.offsetHeight));
+  const topInset = 56, bottomInset = 40;
+  const scale = Math.min(fitZoom(),Math.max(1,width-32)/(right-left),Math.max(1,height-topInset-bottomInset)/(bottom-top));
+  return {zoom:scale,offset:{x:width/2-(left+right)/2*scale,y:(height+topInset-bottomInset)/2-(top+bottom)/2*scale}};
 }
 
 function showOverview(animate = false) {
@@ -1550,6 +1623,12 @@ function applyCustomSize(event) {
   $('custom-size').close();
 }
 
+$('route-picker').addEventListener('change', () => {
+  if (layoutEditing) setLayoutEditing(false);
+  closeVerificationFlow(false);
+  refreshOverviewRoute();
+  showOverview();
+});
 $('screen-picker').addEventListener('change', event=>select(event.target.value));
 $('device-picker').addEventListener('change',event=>{
   const id = event.target.value;
@@ -1803,6 +1882,7 @@ canvas.addEventListener('gestureend',event=>{
 },{passive:false});
 
 createWorld();
+populateRoutePicker();
 collectEdges();
 populateDevices();
 setDevice(defaultDevice);

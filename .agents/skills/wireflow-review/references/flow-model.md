@@ -47,6 +47,8 @@ Use a stable top-level `id` and a unique display `number` such as `02.01` for ea
 
 `review.artboard` can set the initial `width` and `height` in CSS pixels. The **크기 직접 입력…** picker option lets the user change both dimensions during review. Both accept integer dimensions from 1 to 8,192. The default mobile frame is 390 × 844, and the watch preset is 198 × 242. Changing frame size preserves screen IDs and layout order. `review.stateLabels` supplies labels for state values in results and copied requests.
 
+The overview draws a region around each stage. The path picker uses existing scenarios, or individual actions when there are no scenarios. Missing destinations stay unconnected. Numbered labels refer to the original step order, including intermediate same-screen steps.
+
 Use the same Paper components for arbitrary flows. The supported blocks include:
 
 | Block type | Data |

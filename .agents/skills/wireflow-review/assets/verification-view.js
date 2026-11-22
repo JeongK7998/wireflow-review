@@ -57,7 +57,8 @@ function verificationEdges(route) {
   for (const [index,step] of route.steps.entries()) {
     if (!step.to || step.to===step.from) continue;
     const key = connectionKey(step.from,step.to);
-    const entry = highlighted.get(key) || {targets:new Set(),failed:false};
+    const entry = highlighted.get(key) || {targets:new Set(),failed:false,steps:[]};
+    entry.steps.push({...step,number:index+1,failed:Boolean(route.issue && index===route.steps.length-1)});
     entry.targets.add(step.to);
     if (route.issue && index===route.steps.length-1) entry.failed = true;
     highlighted.set(key,entry);
@@ -163,6 +164,8 @@ function openVerificationFlow(route, {inspectEnd = false,keepFocus = false} = {}
     if (after && !snapshots.has(to)) snapshots.set(to,after);
   }
   verificationFlow = {route,previous,snapshots,badges:verificationBadges(route),edges:verificationEdges(route)};
+  $('route-picker').hidden = true;
+  $('route-stop').hidden = true;
   renderScenarioGuide();
   const flowPanel = $('verification-flow');
   const inReview = !$('review').hidden;
@@ -205,6 +208,8 @@ function closeVerificationFlow(restoreFocus = true) {
   if (!verificationFlow) return;
   const {previous} = verificationFlow;
   verificationFlow = undefined;
+  $('route-picker').hidden = $('route-picker').options.length===1;
+  $('route-stop').hidden = !overviewRoute?.issue;
   $('verification-flow').hidden = true;
   $('scenario-guide').after($('verification-flow'));
   canvas.removeAttribute('data-verification');

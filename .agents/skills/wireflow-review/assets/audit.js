@@ -119,7 +119,7 @@ function auditLocalControl(entry,current,surface) {
   if (field==='clear-area' || field==='clear-category') {
     const filter = field.slice(6);
     control.click();
-    return {expected:ui('필터 전체','All filters'),actual:ui('필터 ','Filter ')+auditValue(vars[filter])};
+    return {expected:ui('전체','All'),actual:auditValue(vars[filter])};
   }
   if (workshop && field==='date') {
     expected = Number(control.value);
@@ -137,7 +137,7 @@ function auditLocalControl(entry,current,surface) {
     expected = !control.checked;
     control.click();
   } else {
-    expected = workshop ? {query:ui('목공','woodwork'),name:'이름 검증',email:'audit@example.com',memo:'요청 사항 검증'}[field] :
+    expected = workshop ? {query:ui('목공','woodwork'),name:ui('이름 검증','Test name'),email:'audit@example.com',memo:ui('요청 사항 검증','Test request')}[field] :
       control.type==='email'?'audit@example.com':control.type==='url'?'https://example.com':control.type==='tel'?'01012345678':ui('검증 입력','Test input');
     if (expected===undefined) return;
     changeInput(control,expected,'input');

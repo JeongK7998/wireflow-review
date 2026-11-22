@@ -9,14 +9,18 @@ from zipfile import ZIP_DEFLATED, ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / ".agents/skills/wireflow-review"
 RELEASE = ROOT / "release"
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 OUTPUT = RELEASE / f"wireflow-review-v{VERSION}.zip"
 KIT = ROOT / "artifacts/wireflow-skill" / f"wireflow-release-kit-v{VERSION}.zip"
 
 # Only reviewed deliverables go into the public kit.
 PUBLIC_FILES = [
-    "README.md", "APPLY.md", "index.html", OUTPUT.name,
+    "README.md", "README.ko.md", "APPLY.md", "index.html", OUTPUT.name,
     "example/brief.md", "example/night-atlas.flow.json", "example/night-atlas.html",
+    "example/night-atlas.en.flow.json", "example/night-atlas.en.html",
+    "example/pottery-booking.md", "example/pottery-booking.ko.flow.json", "example/pottery-booking.ko.html",
+    "example/pottery-booking.en.flow.json", "example/pottery-booking.en.html",
+    "media/booking-mobile-en.png", "media/booking-tablet-en.png",
     "media/01-canvas.png", "media/02-floor-plan.png", "media/03-installation.png",
     "media/04-review.png", "media/05-handoff.png", "media/installation-detail.png",
     "media/night-atlas.mp4", "media/night-atlas.ko.vtt",

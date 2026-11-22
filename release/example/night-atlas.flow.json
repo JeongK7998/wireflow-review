@@ -502,6 +502,20 @@
           "screen": "record"
         }
       ]
+    },
+    {
+      "id": "room-a-note",
+      "title": "A실 도면에서 점검 메모 작성",
+      "steps": [
+        {
+          "action": "zone-a",
+          "screen": "field"
+        },
+        {
+          "action": "inspect",
+          "screen": "inspect"
+        }
+      ]
     }
   ],
   "proposals": [
@@ -659,7 +673,7 @@
               "inspect": {
                 "title": "같은 인계 메모",
                 "selector": ".wireflow-side .info-rows > :nth-child(2) dd",
-                  "exact": true,
+                "exact": true,
                 "text": [
                   "A실 7번 핀 재점검 완료"
                 ]
@@ -721,6 +735,40 @@
           ]
         }
       ]
+    },
+    "positions": {
+      "desk": {
+        "x": 0,
+        "y": 0
+      },
+      "schedule": {
+        "x": 1,
+        "y": 0
+      },
+      "field": {
+        "x": 2.46,
+        "y": 0
+      },
+      "light": {
+        "x": 3.46,
+        "y": 0
+      },
+      "inspect": {
+        "x": 0,
+        "y": 1.25
+      },
+      "confirm": {
+        "x": 1,
+        "y": 1.25
+      },
+      "sent": {
+        "x": 2,
+        "y": 1.25
+      },
+      "record": {
+        "x": 3.46,
+        "y": 1.25
+      }
     }
   },
   "images": {
