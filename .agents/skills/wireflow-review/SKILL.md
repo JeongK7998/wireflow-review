@@ -1,11 +1,11 @@
 ---
 name: wireflow-review
-description: Help designers plan apps with AI by turning rough briefs and existing screens into a clickable map of user journeys. Use it to walk through a task, uncover overlooked steps or recovery paths, and distinguish required behavior from decisions still open.
+description: Help anyone planning an app review its structure and user flow. Turn rough briefs and existing screens into a clickable wireflow of simple mock screens connected by arrows. Use it to walk through a task, uncover overlooked steps or recovery paths, and distinguish required behavior from decisions still open.
 ---
 
 # Build and review a wireflow
 
-Use the wireflow during planning. Let the designer start with the whole app, follow one user goal and see which steps, return paths or design decisions need attention. Identify the source briefly, keep reported facts and draft UI assumptions distinguishable, and preserve unresolved policy questions. Use dummy values for real-world side effects.
+Use the wireflow during planning. Let the user start with the whole app, follow one user goal and see which steps, return paths or design decisions need attention. Identify the source briefly, keep reported facts and draft UI assumptions distinguishable, and preserve unresolved policy questions. Use dummy values for real-world side effects.
 
 1. Read [the flow model](references/flow-model.md). Turn the user's brief into a project-local flow JSON with a stable flow ID, screen IDs, and display numbers. Show the controls people need to take action. Include normal use, relevant empty or failed states, and recovery. Use the same shared renderer for every brief. Choose ordinary UI blocks from the model, and put project-specific content in the JSON. Record independent expected outcomes from the plan so checks can catch gaps in the current implementation. For each main journey, consider relevant missing input, failure, cancel or back, and retry. Turn the ones supported by the brief into explicit browser checks. Record unresolved policies as decisions and report which states were exercised. Put screen-specific planning intent under `brief` and relevant conditions under `uxConditions`. Preserve the user’s rationale and label AI-supplied screens as inferred.
 2. Run `node <skill-folder>/scripts/wireflow.cjs check FLOW.json` and `node <skill-folder>/scripts/wireflow.cjs build FLOW.json VIEWER.html` from the user's project. Node.js 18+ is sufficient. A build can contain intentionally broken links. Preserve them for review and report what the checks verified. Open the standalone HTML beside the chat when supported and provide links to the HTML and the source JSON. Use an external browser or the HTML file if the host lacks an embedded preview. When browser automation is available, click a main journey and a recovery case.
@@ -20,7 +20,7 @@ Match the user's requested interface language for the mockup, planning labels, a
 
 Create one `review.requirements` entry per observable requirement from the brief. Link the browser steps that actually check it by setting `requirement` on each step. Use planning decisions for unresolved expectations. This lists what was tested and shows unexecuted items in the canvas sidebar.
 
-For each requirement, put the observable behavior in `expected` and set `origin: "source"` only when the brief actually requires it. Use `origin: "inferred"` for an assumed behavior. When the brief leaves the destination open, list candidate screen IDs in `suggestedScreens` and record the open question in `decisions`. A test may target one candidate to reproduce the current mockup. In a copied request, treat a proposed screen as a design option until the designer chooses it.
+For each requirement, put the observable behavior in `expected` and set `origin: "source"` only when the brief actually requires it. Use `origin: "inferred"` for an assumed behavior. When the brief leaves the destination open, list candidate screen IDs in `suggestedScreens` and record the open question in `decisions`. A test may target one candidate to reproduce the current mockup. In a copied request, treat a proposed screen as a design option until the user chooses it.
 
 For independent flow verification, author the expected behavior separately from the mockup and use the XState and Playwright workflow in [independent verification](references/independent-verification.md). Run it when the user asks to verify real clicks or compare the mockup against planning rules, and report the browser viewport checked.
 

@@ -2,7 +2,7 @@
 
 English · [한국어](README.ko.md)
 
-Turn your app idea into a map you can click through. If you’re designing an app with AI, use the map to see where people can go, where they might get stuck, and which decisions you still need to make.
+This AI skill helps anyone planning an app review its **structure and user flow** before choosing a visual design. It turns your notes or existing screens into a clickable wireflow of simple mock screens connected by arrows. Click through a task to see where each choice leads and spot any missing steps.
 
 - **See the whole app.** Screens are grouped by task. Pick a path to highlight the buttons and numbered arrows that take someone from start to finish.
 - **Try the easy-to-miss steps.** Go back after entering information, cancel halfway through, or retry after an error. Check where you land and what the app remembers.
