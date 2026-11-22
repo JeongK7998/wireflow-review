@@ -11,7 +11,7 @@ This AI skill helps anyone planning an app review its **structure and user flow*
 ## Use it in your project
 
 1. Open your project in an AI coding tool. A few notes about your app, a brief, or existing screens are enough to get started.
-2. Paste the message below into the project chat. While this repository is private, your AI tool needs GitHub access to read it.
+2. Paste these two lines into the project chat.
 
 ```text
 https://github.com/JeongK7998/wireflow-review

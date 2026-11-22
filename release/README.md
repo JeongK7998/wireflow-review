@@ -11,13 +11,16 @@ This AI skill helps anyone planning an app review its **structure and user flow*
 ## Use it in your project
 
 1. Open your project in an AI coding tool with your notes or existing screens.
-2. Attach the distribution kit to the project chat and send this message.
+2. Paste these two lines into the project chat.
 
 ```text
-Read APPLY.md in the attached kit and apply this skill to my project.
+https://github.com/JeongK7998/wireflow-review
+Apply this skill to my project.
 ```
 
 3. Open the generated HTML in your browser and follow a path. If a step is missing, copy a change request from that screen into the same chat.
+
+If you already have the distribution kit, attach it to the chat and send the same request. The kit includes the setup guide and installer.
 
 Select a screen to zoom in with its neighbors still visible. Choose **Overview** to return to the map. The **⋯** menu lets you change the highlighted path or device.
 
