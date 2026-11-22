@@ -32,4 +32,4 @@ https://github.com/JeongK7998/wireflow-review
 
 내 프로젝트에 적용하기 전에 직접 눌러 보려면 예제를 내려받아 브라우저에서 여세요. [한국어 예제 내려받기](release/example/pottery-booking.ko.html?raw=1)
 
-저장소 링크를 받은 AI는 프로젝트 적용 안내를 따릅니다. [프로젝트 적용 안내](release/APPLY.md#한국어) · [스킬 ZIP 내려받기](release/wireflow-review-v0.5.3.zip?raw=1)
+저장소 링크를 받은 AI는 프로젝트 적용 안내를 따릅니다. [프로젝트 적용 안내](release/APPLY.md#한국어) · [스킬 ZIP 내려받기](release/wireflow-review-v0.5.4.zip?raw=1)

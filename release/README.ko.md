@@ -31,7 +31,7 @@
 
 내 프로젝트에 적용하기 전에 직접 눌러 보려면 키트에 들어 있는 예제를 브라우저에서 여세요. [한국어 예제 열기](example/pottery-booking.ko.html)
 
-저장소 링크를 받은 AI는 프로젝트 적용 안내를 따릅니다. [프로젝트 적용 안내](APPLY.md#한국어) · [스킬 ZIP 내려받기](wireflow-review-v0.5.3.zip)
+저장소 링크를 받은 AI는 프로젝트 적용 안내를 따릅니다. [프로젝트 적용 안내](APPLY.md#한국어) · [스킬 ZIP 내려받기](wireflow-review-v0.5.4.zip)
 
 <details>
 <summary>예제별 검증 기록과 배포 파일 목록</summary>

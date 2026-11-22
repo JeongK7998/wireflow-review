@@ -362,7 +362,7 @@ test('a missing retry stays blocked until the viewer applies a proposal without 
   await run(process.execPath,[cli,'build',input,output]);
   const browser = await chromium.launch();
   t.after(()=>browser.close());
-  const page = await browser.newPage({reducedMotion:'reduce'});
+  const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
   await page.goto(pathToFileURL(output).href);
   assert.equal(await page.locator('#route-picker').inputValue(),'recover');
   assert.equal(await page.locator('#route-stop').isVisible(),true);

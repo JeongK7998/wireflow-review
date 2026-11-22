@@ -31,4 +31,4 @@ Read APPLY.md in the attached kit and apply this skill to my project.
 
 To try it first, open the included demo in a browser. [Open the English demo](example/pottery-booking.en.html)
 
-For AI tools following a repository link, use the project setup guide. [Setup guide](APPLY.md) · [Download the skill ZIP](wireflow-review-v0.5.3.zip)
+For AI tools following a repository link, use the project setup guide. [Setup guide](APPLY.md) · [Download the skill ZIP](wireflow-review-v0.5.4.zip)

@@ -1054,7 +1054,7 @@ function applyReview(proposal) {
   message = '';
   for (const id of artboards.keys()) renderBoard(id);
   renderSimulation();
-  center();
+  center(false,true);
   renderScenarioGuide();
   renderReview();
   $('run-checks').focus({preventScroll:true});
