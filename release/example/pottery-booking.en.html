@@ -815,7 +815,7 @@ h1, h2, h3 { letter-spacing: -.033em; line-height: 1.16; }
   .work-area[data-review-open] .review-sidebar { height: min(340px, max(42%, 220px), calc(100% - 20px)); }
   #verification-flow[data-panel-route] #flow-step-detail { display: none; }
 }
-.canvas { position: relative; isolation: isolate; overflow: hidden; touch-action: none; user-select: none; background: var(--paper-section); }
+.canvas { position: relative; isolation: isolate; overflow: clip; touch-action: none; user-select: none; background: var(--paper-section); }
 .canvas-area { position: relative; display: grid; grid-template-rows: minmax(0,1fr); min-height: 0; min-width: 0; }
 .canvas-area:has(.verification-flow:not([hidden])) { grid-template-rows: auto minmax(0,1fr); }
 .verification-flow { padding: 8px clamp(10px,2vw,22px); min-width: 0; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -879,21 +879,25 @@ h1, h2, h3 { letter-spacing: -.033em; line-height: 1.16; }
   content: ""; position: absolute; inset: 0; pointer-events: none;
   border: var(--paper-stroke) solid var(--paper-accent); border-radius: var(--device-radius);
 }
-.canvas { --device-radius: 20px; }
+.canvas { --device-radius: 20px; --group-inset: 24px; }
 .canvas[data-device="watch"] { --device-radius: 30px; }
 .stage-cluster {
   position: absolute; pointer-events: none; border: 2px solid #b4ccd1;
-  background: rgb(222 237 241 / .64); border-radius: 18px;
+  background: rgb(222 237 241 / .64); border-radius: calc(var(--device-radius) + var(--group-inset));
 }
 .stage-cluster:nth-child(3n+2) { border-color: #b9c9b2; background: rgb(228 238 223 / .64); }
 .stage-cluster:nth-child(3n) { border-color: #cec1ae; background: rgb(243 233 217 / .64); }
 .canvas:not([data-layout-edit]) button.stage-heading { background: transparent; }
 #route-stop { color: var(--warning); font-size: .78rem; }
+#route-warning { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+#route-proposal-list { display: grid; gap: 12px; }
+#route-proposal-list section { display: grid; justify-items: start; gap: 7px; }
+#route-proposal-list h3 { margin: 0; }
 #route-picker { max-width: min(48vw, 300px); margin-right: auto; }
 .canvas:not([data-layout-edit]) [data-route-control] { outline: var(--route-ring, 4px) solid #00685e; outline-offset: 2px; }
 .canvas:not([data-layout-edit]) [data-route-control]:is([data-verification-control],[data-route-failed]) { outline-color: var(--paper-route-issue); }
 
-.stage-heading { padding: 7px 9px; white-space: nowrap; font: 700 23px/1.2 var(--paper-font-sans); }
+.stage-heading { padding: 7px calc(var(--group-inset) - 4px); white-space: nowrap; font: 700 23px/1.2 var(--paper-font-sans); }
 button.stage-heading { margin: 0; border: 2px solid transparent; border-radius: 8px; color: var(--paper-ink); background: var(--paper-section); pointer-events: auto; }
 .layout-toolbar {
   flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
@@ -973,6 +977,11 @@ button.stage-heading::before { vertical-align: text-bottom; }
 .brief-source { color: var(--muted); margin-bottom: 6px; }
 #description-brief { white-space: pre-wrap; }
 .request-editor textarea { font-size: 1rem; }
+.request-editor textarea::placeholder { font-size: .8125rem; }
+.paper-ui .paper-select > select,
+.paper-ui :is(.paper-field,.paper-search input)::placeholder {
+  font: 400 var(--paper-caption)/1.35 var(--paper-font-sans);
+}
 .simulation { flex-wrap: wrap; justify-content: flex-end; }
 .simulation .tool { min-height: 28px; padding: 4px 7px; font-size: .73rem; }
 .simulation .caption { color: var(--muted); font-size: .72rem; }
@@ -1213,24 +1222,67 @@ dialog h3 { font-size: .95rem; }
 .suggested-screen { color: #55476b; background: #f5f0ff; border-radius: 5px; font-size: 14px; padding: 3px 6px; }
 .canvas[data-overview] [data-suggested-screen] .device { outline: 3px dashed #776d90; outline-offset: 3px; }
 #simulation [data-route-control] { outline: 3px solid #00685e; }
+
+.toolbar { justify-content: flex-start; z-index: 5; }
+.identity .divider { color: var(--muted); font-weight: 400; }
+.toolbar .canvas-tools { position: static; margin-left: auto; box-shadow: none; }
+.canvas-more-panel {
+  top: calc(100% + 8px); bottom: auto; display: grid; gap: 7px; padding: 9px;
+  max-height: 65vh; overflow: auto;
+}
+.canvas-more-panel .tools { display: grid; margin: 0; }
+.canvas-more-panel select { width: 100%; }
+.footer { justify-content: flex-start; min-height: 0; }
+.footer:has(#route-warning[hidden]):has(#screen-decisions[hidden]):has(#simulation[hidden]),
+.workspace:has(.canvas[data-overview]) .footer { display: none; }
+#screen-decisions { font-size: .78rem; color: var(--muted); }
+.overview-hit { display: none; }
+.canvas[data-overview]:not([data-verification],[data-layout-edit]) .overview-hit {
+  display: block; position: absolute; inset: 0; z-index: 2; width: 100%;
+  padding: 0; border: 0; border-radius: var(--device-radius); background: transparent; cursor: zoom-in;
+}
+@media (max-width: 650px) {
+  .toolbar { gap: 4px; padding: 5px 8px; }
+  .toolbar .identity { flex-basis: 100%; }
+  .toolbar .canvas-tools { margin-left: 0; }
+  .toolbar .requests-trigger { margin-left: auto; }
+  .canvas-more-panel { left: auto; right: -24px; }
+}
+
+.canvas[data-overview] .stage-heading { font-size: var(--group-title-size); }
+.canvas[data-overview] .screen-label { font-size: var(--screen-label-size); }
+.canvas[data-overview] .screen-label span { font-size: .8em; }
 </style>
 </head>
 <body>
   <div class="workspace">
     <header class="toolbar">
       <div class="identity">
-        <h1 id="sample-name"></h1>
-        <p>XU Wireflow Review</p>
+        <h1>XU Wireflow Review <span class="divider">|</span> <span id="sample-name"></span></h1>
       </div>
-      <div class="tools">
-        <label class="sr-only" for="screen-picker" data-en="Choose a screen">화면 선택</label>
-        <span class="toolbar-picker"><select id="screen-picker"></select></span>
-        <label class="sr-only" for="device-picker" data-en="Device size">기기 해상도</label>
-        <span class="toolbar-picker"><select id="device-picker"></select></span>
-        <button id="test-mode" type="button" class="tool" aria-pressed="false" hidden data-en="Test mode">테스트 모드</button>
+      <div class="canvas-tools" aria-label="캔버스 조작" data-en-aria-label="Canvas controls">
+        <button id="overview" type="button" class="tool" data-en="Overview">전체 보기</button>
+        <button type="button" id="zoom-out" aria-label="축소" data-en-aria-label="Zoom out">−</button>
+        <button type="button" id="zoom-readout" aria-label="현재 확대 비율" data-en-aria-label="Current zoom" disabled></button>
+        <button type="button" id="zoom-in" aria-label="확대" data-en-aria-label="Zoom in">+</button>
+        <details id="canvas-more" class="canvas-more">
+          <summary aria-label="캔버스 도구 더 보기" data-en-aria-label="More canvas tools" title="캔버스 도구 더 보기" data-en-title="More canvas tools">⋯</summary>
+          <div class="canvas-more-panel">
+            <div class="tools">
+              <label class="sr-only" for="screen-picker" data-en="Choose a screen">화면 선택</label>
+              <span class="toolbar-picker"><select id="screen-picker"></select></span>
+              <label class="sr-only" for="device-picker" data-en="Device size">기기 해상도</label>
+              <span class="toolbar-picker"><select id="device-picker"></select></span>
+              <button id="test-mode" type="button" class="tool" aria-pressed="false" hidden data-en="Test mode">테스트 모드</button>
+            </div>
+            <select id="route-picker" class="tool" aria-label="표시할 경로" data-en-aria-label="Show a path"></select>
+            <button type="button" id="center" class="center" data-en="Fit selected screen">선택 화면에 맞춤</button>
+            <button id="experimental-layout" type="button"><span data-en="Edit layout">배치 편집</span> <span data-en="Experimental">실험 기능</span></button>
+          </div>
+        </details>
       </div>
       <button id="requests-open" type="button" class="tool requests-trigger" aria-haspopup="dialog" aria-controls="request-list">
-        <span data-en="AI change requests">AI 수정 요청</span> <span id="request-count" aria-hidden="true">0</span>
+        <span data-en="AI change requests">수정 요청 목록</span> <span id="request-count" aria-hidden="true">0</span>
       </button>
       <div class="layout-toolbar" id="layout-toolbar" hidden>
         <button id="layout-edit" type="button" class="tool" data-en="Finish editing layout">실험 편집 완료</button>
@@ -1243,7 +1295,7 @@ dialog h3 { font-size: .95rem; }
     <div class="work-area" id="work-area">
       <aside class="review-sidebar" aria-label="Flow 검증" data-en-aria-label="Flow Verification">
         <div class="review-toolbar">
-          <button id="review-open" type="button" class="tool" aria-expanded="false" aria-controls="review" data-en="Flow Verification">Flow 검증</button>
+          <button id="review-open" type="button" class="tool" aria-expanded="false" aria-controls="review" data-en="Flow Verification">흐름 검증</button>
           <button id="run-checks" type="button" class="tool" aria-controls="review-results" hidden data-en="Run checks">검증 실행</button>
         </div>
         <section id="review" aria-label="검증 항목과 결과" data-en-aria-label="Requirements and results" hidden>
@@ -1323,18 +1375,6 @@ dialog h3 { font-size: .95rem; }
             <button id="description-open" type="button" class="tool" aria-controls="screen-description" aria-expanded="false" data-en="Design rationale">기획 근거</button>
           </div>
         </main>
-        <div class="canvas-tools" aria-label="캔버스 조작" data-en-aria-label="Canvas controls">
-          <button type="button" id="zoom-out" aria-label="축소" data-en-aria-label="Zoom out">−</button>
-          <button type="button" id="zoom-readout" aria-label="현재 확대 비율" data-en-aria-label="Current zoom" disabled></button>
-          <button type="button" id="zoom-in" aria-label="확대" data-en-aria-label="Zoom in">+</button>
-          <button type="button" id="center" class="center" data-en="Fit selected screen">선택 화면에 맞춤</button>
-          <details id="canvas-more" class="canvas-more">
-            <summary aria-label="캔버스 도구 더 보기" data-en-aria-label="More canvas tools" title="캔버스 도구 더 보기" data-en-title="More canvas tools">⋯</summary>
-            <div class="canvas-more-panel">
-              <button id="experimental-layout" type="button"><span data-en="Edit layout">배치 편집</span> <span data-en="Experimental">실험 기능</span></button>
-            </div>
-          </details>
-        </div>
         <aside id="request-editor" class="inspector-panel request-editor" role="region" aria-labelledby="request-title" hidden>
           <header class="dialog-head"><h2 id="request-title"></h2><button id="request-close" type="button" class="tool quiet" aria-label="수정 요청 닫기" data-en-aria-label="Close change request" data-en="Close">닫기</button></header>
           <dl id="request-planning" class="finding-result planning-evidence" hidden></dl>
@@ -1366,12 +1406,22 @@ dialog h3 { font-size: .95rem; }
       </div>
     </div>
     <footer class="footer">
-      <button id="overview" type="button" class="tool" data-en="Fit all screens">전체 화면 보기</button>
-      <select id="route-picker" class="tool" aria-label="표시할 경로" data-en-aria-label="Show a path"></select>
-      <output id="route-stop" hidden></output>
+      <div id="route-warning" hidden>
+        <output id="route-stop"></output>
+        <button id="route-proposals-open" class="tool soft" type="button" aria-haspopup="dialog" aria-controls="route-proposals" data-en="View proposed fixes" hidden>개선안 보기</button>
+      </div>
+      <output id="screen-decisions" hidden></output>
       <div id="simulation" class="simulation" role="group" aria-label="모의 입력" data-en-aria-label="Simulation controls"></div>
     </footer>
   </div>
+  <dialog id="route-proposals" aria-labelledby="route-proposals-title">
+    <form method="dialog" class="dialog-head">
+      <h2 id="route-proposals-title"></h2>
+      <button class="tool quiet" autofocus data-en="Close">닫기</button>
+    </form>
+    <div id="route-proposal-list"></div>
+    <p id="route-proposal-error" role="alert"></p>
+  </dialog>
   <dialog id="custom-size" aria-labelledby="custom-size-title">
     <form id="custom-size-form">
       <div class="dialog-head"><h2 id="custom-size-title" data-en="Custom screen size">화면 크기 직접 입력</h2></div>
@@ -1400,7 +1450,7 @@ dialog h3 { font-size: .95rem; }
     <p id="copy-status" role="status"></p>
     <textarea id="copy-text" rows="5" hidden readonly aria-label="복사할 요청" data-en-aria-label="Requests to copy"></textarea>
   </dialog>
-  <script id="flow-data" type="application/json">{"title":"Pottery class booking","goal":"Find a pottery class, book a place and manage the booking.","start":"welcome","entries":["browse"],"vars":{"area":"All","category":"All","level":"First class","reminders":true,"newsletter":false,"query":"","course":"Handbuilding","date":21,"time":"14:00","guests":"1 guest","name":"","email":"","memo":"","agreed":false,"reservation":"None","bookedCourse":"Handbuilding","bookedDate":21,"bookedTime":"14:00","bookedGuests":"1 guest","bookedName":"Robin","bookedEmail":"seoyun@example.com"},"stages":["Get started","Find a class","Book a class","Manage bookings","Preferences"],"screens":[{"id":"welcome","brief":"Let a first-time visitor set preferences or go straight to the classes.","number":"01.01","title":"Welcome","stage":0,"slot":0,"origin":"inferred","actions":[{"id":"start","label":"Set preferences","to":"setup"},{"id":"skip","label":"Browse classes","to":"browse","kind":"secondary"}],"uxConditions":["Skipping setup opens all classes with no filters.","Save preferences to enter the list, or return to the welcome screen."]},{"id":"setup","brief":"Choose a neighborhood, experience level and notification preferences.","number":"01.02","title":"Preferences","stage":0,"slot":1,"origin":"inferred","actions":[{"id":"save","label":"Find classes","to":"browse"},{"id":"back","label":"Back","to":"welcome","kind":"back"}],"uxConditions":["The saved neighborhood filters the class list. Experience is stored for this session.","Booking reminders and class news are independent. Only reminders are on by default."]},{"id":"browse","brief":"Browse the list or narrow it down by neighborhood and technique.","number":"02.01","title":"Class list","stage":1,"slot":0,"origin":"inferred","actions":[{"id":"filters","label":"Filters","to":"filters","kind":"inline"},{"id":"open-hand","label":"Handbuilding","to":"class","kind":"inline","set":{"course":"Handbuilding"}},{"id":"open-wheel","label":"Wheel throwing","to":"class","kind":"inline","set":{"course":"Wheel throwing"}},{"id":"open-glaze","label":"Glaze painting","to":"class","kind":"inline","set":{"course":"Glaze painting"}},{"id":"empty","label":"No results","to":"search-empty","kind":"inline"},{"id":"bookings","label":"My bookings","to":"bookings","kind":"tab"},{"id":"settings","label":"Settings","to":"settings","kind":"tab"}],"uxConditions":["Search matches class names, areas and techniques. Both filters must match.","Clearing the search keeps the filters. Removing a filter only clears that filter.","Submitting a search with no matches opens the empty state."]},{"id":"filters","brief":"Choose a neighborhood and technique, then apply them to the list.","number":"02.02","title":"Class filters","stage":1,"slot":1,"origin":"inferred","actions":[{"id":"apply","label":"Apply filters","to":"browse"},{"id":"close","label":"Close filters","to":"browse","kind":"close"}],"uxConditions":["Filter choices take effect when applied.","Closing the dialog restores the previous search and filters."]},{"id":"search-empty","brief":"Show what the visitor searched for and provide a way back to all classes.","number":"02.03","title":"Empty results","stage":1,"slot":2,"origin":"inferred","actions":[{"id":"clear","label":"Reset search and filters","to":"browse","set":{"query":"","area":"All","category":"All"}}],"preview":{"query":"woodwork"},"uxConditions":["Show the empty state when the current query and filters have no matches.","Reset clears the query and both filters."]},{"id":"class","brief":"Read the class details before choosing a session.","number":"02.04","title":"Class details","stage":1,"slot":3,"origin":"inferred","actions":[{"id":"choose","label":"Choose a session","to":"schedule"},{"id":"back","label":"Class list","to":"browse","kind":"back"}],"uxConditions":["Carry the class name and price into the booking.","Keep the query and filters when returning to the list."]},{"id":"schedule","brief":"Choose a date, start time and party size before entering contact details.","number":"03.01","title":"Choose a session","stage":2,"slot":0,"origin":"inferred","actions":[{"id":"continue","label":"Enter booking details","to":"checkout"},{"id":"back","label":"Class details","to":"class","kind":"back"}],"uxConditions":["November 21, 22, 28 and 29 are available in this demo.","Choose 11:00, 14:00 or 16:00 and one to three guests. Carry the selections into checkout."]},{"id":"checkout","brief":"Collect contact details while retaining the chosen session.","number":"03.02","title":"Booking details","stage":2,"slot":1,"origin":"inferred","actions":[{"id":"confirm","label":"Review booking","to":"confirm"},{"id":"back","label":"Choose a session","to":"schedule","kind":"back"}],"uxConditions":["Name, email and acknowledgment are required. Keep the form open on invalid input.","Name accepts 32 characters. Email and the optional request accept 80 each."]},{"id":"confirm","brief":"Review the class, session, contact details and total before paying.","number":"03.03","title":"Review payment","stage":2,"slot":2,"origin":"inferred","actions":[{"id":"pay","label":"Confirm payment","to":"success","set":{"reservation":"Booked"}},{"id":"close","label":"Back to details","to":"checkout","kind":"close"},{"id":"fail","label":"Simulate payment failure","to":"payment-error","kind":"simulation"}],"preview":{"name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Multiply the price per guest by the party size.","Closing or failing payment preserves the draft. Save booking details only on success."]},{"id":"payment-error","brief":"Keep the session and contact details after a failed payment. Complete the booking only once.","number":"03.04","title":"Payment failed","stage":2,"slot":3,"origin":"inferred","actions":[{"id":"retry","label":"Retry payment","to":"confirm"},{"id":"back","label":"Edit booking details","to":"checkout","kind":"back"}],"preview":{"name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["A failed payment leaves the booking unconfirmed and keeps the draft.","Retry opens the same payment review. Return to the form to make changes."]},{"id":"success","brief":"Show confirmation and let the visitor find the booking again.","number":"03.05","title":"Booking confirmed","stage":2,"slot":4,"origin":"inferred","actions":[{"id":"bookings","label":"View my bookings","to":"bookings"},{"id":"home","label":"Browse more classes","to":"browse","kind":"secondary"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"end":true,"uxConditions":["A toast simulates the confirmation email.","The reference and price reflect the confirmed booking. Later changes apply to the next draft."]},{"id":"bookings","brief":"Find the confirmed booking and its cancellation status.","number":"04.01","title":"My bookings","stage":3,"slot":0,"origin":"inferred","actions":[{"id":"detail","label":"View booking","to":"booking","kind":"inline","when":{"reservation":"Booked"}},{"id":"browse","label":"Classes","to":"browse","kind":"tab"},{"id":"settings","label":"Settings","to":"settings","kind":"tab"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Show an empty state before the first booking. Open details for an active booking.","Show cancelled bookings in the list. This demo keeps the most recent booking."]},{"id":"booking","brief":"Show the confirmed details and ask before cancelling.","number":"04.02","title":"Booking details","stage":3,"slot":1,"origin":"inferred","actions":[{"id":"cancel","label":"Cancel booking","to":"cancel"},{"id":"back","label":"My bookings","to":"bookings","kind":"back"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Use the class, session, guests and contact details saved at payment.","Open cancellation review before changing the booking."]},{"id":"cancel","brief":"Closing preserves the booking. Confirming changes its status.","number":"04.03","title":"Review cancellation","stage":3,"slot":2,"origin":"inferred","actions":[{"id":"cancel","label":"Confirm cancellation","to":"cancelled","set":{"reservation":"Cancelled"}},{"id":"close","label":"Keep booking","to":"booking","kind":"close"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Closing the dialog or pressing Escape keeps the booking active.","Confirming changes the status and opens the cancellation receipt."]},{"id":"cancelled","brief":"Show the cancellation result and let the visitor find it in the list.","number":"04.04","title":"Booking cancelled","stage":3,"slot":3,"origin":"inferred","actions":[{"id":"bookings","label":"View my bookings","to":"bookings"},{"id":"browse","label":"Browse more classes","to":"browse","kind":"secondary"}],"preview":{"reservation":"Cancelled"},"end":true,"uxConditions":["The cancelled class remains listed with its status.","Start a new booking from the class list."]},{"id":"settings","brief":"Reopening settings restores the saved area and notification preferences.","number":"05.01","title":"Settings","stage":4,"slot":0,"origin":"inferred","actions":[{"id":"save","label":"Save settings","to":"browse"},{"id":"browse","label":"Classes","to":"browse","kind":"tab"},{"id":"bookings","label":"My bookings","to":"bookings","kind":"tab"}],"uxConditions":["The saved neighborhood also applies to the class list.","Area, experience and notification preferences persist in this session."]}],"scenarios":[{"id":"first","title":"First visit and booking","start":"welcome","steps":[{"action":"start","screen":"setup"},{"action":"save","screen":"browse"},{"action":"open-hand","screen":"class"},{"action":"choose","screen":"schedule"},{"action":"continue","screen":"checkout"},{"action":"confirm","hint":"Enter a name and email, then accept the booking terms.","screen":"confirm"},{"action":"pay","screen":"success","vars":{"reservation":"Booked"}}]},{"id":"repeat","title":"Filter and book a class","start":"browse","steps":[{"action":"filters","screen":"filters"},{"action":"apply","hint":"Choose Seongsu and Wheel, then apply the filters.","screen":"browse"},{"action":"open-wheel","screen":"class","vars":{"course":"Wheel throwing"}},{"action":"choose","screen":"schedule"},{"action":"continue","screen":"checkout"},{"action":"confirm","hint":"Enter a name and email, then accept the booking terms.","screen":"confirm"},{"action":"pay","screen":"success","vars":{"reservation":"Booked"}}]},{"id":"empty","title":"Recover from empty search","start":"browse","steps":[{"action":"empty","hint":"Search for woodwork and open the empty results screen.","screen":"search-empty"},{"action":"clear","screen":"browse","vars":{"query":"","category":"All"}}]},{"id":"payment","title":"Retry a failed payment","start":"confirm","steps":[{"action":"fail","screen":"payment-error"},{"action":"retry","screen":"confirm"},{"action":"pay","screen":"success","vars":{"reservation":"Booked"}}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true}},{"id":"cancel","title":"Review and cancel a booking","start":"success","steps":[{"action":"bookings","screen":"bookings"},{"action":"detail","screen":"booking"},{"action":"cancel","screen":"cancel"},{"action":"close","screen":"booking","vars":{"reservation":"Booked"}},{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"}},{"action":"bookings","screen":"bookings"}],"initial":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true}},{"id":"settings","title":"Save preferences","start":"settings","steps":[{"action":"save","screen":"browse"},{"action":"settings","screen":"settings"}]},{"id":"session-review","title":"Choose a session and review","start":"schedule","steps":[{"action":"continue","screen":"checkout"},{"action":"confirm","hint":"Enter a name and email, then accept the booking terms.","screen":"confirm"}]}],"proposals":[],"decisions":[{"screen":"cancel","question":"What cancellation deadline and refund terms does the studio use?"},{"screen":"payment-error","question":"How should payment status be checked after a timeout?"}],"review":{"renderer":"workshop","groupDirection":"vertical","artboard":{"width":390,"height":844},"samples":[{"route":"first","title":"First visit and booking","task":"Choose preferences and book a class.","check":"Check that the session and contact details reach payment review."},{"route":"repeat","title":"Filter and book a class","task":"Filter to Seongsu and Wheel, then book the wheel class.","check":"Check that both the class list and filter chips update."},{"route":"empty","title":"Recover from empty search","task":"Search for woodwork, then reset the filters.","check":"Check the query and recover the full class list."},{"route":"payment","title":"Retry a failed payment","task":"Simulate a failed payment, then retry.","check":"Check the session and contact details and confirm once."},{"route":"cancel","title":"Review and cancel a booking","task":"Dismiss the cancellation dialog, reopen it, cancel and review the list.","check":"Closing keeps the booking. Confirming changes its status."},{"route":"settings","title":"Save preferences","task":"Turn off reminders, save settings and reopen them.","check":"Check the saved reminder and neighborhood values."}],"source":"A fictional pottery class service for reviewing booking and recovery flows.","opinions":[{"screen":"search-empty","text":"Decide whether an empty search should clear the query alone or all filters."},{"screen":"payment-error","text":"Place retry and edit actions alongside the failure message."}],"audit":{"testMode":{"screen":"cancel","actions":{"close":{"to":"browse"},"cancel":{"set":{"reservation":"Booked"}}}},"fixtures":[{"title":"Valid booking details","screen":"checkout","vars":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Empty search","screen":"browse","vars":{"query":"woodwork"},"expects":["empty"]},{"title":"Filtered classes","screen":"browse","vars":{"area":"Seongsu","category":"Wheel"}},{"title":"Empty bookings","screen":"bookings","vars":{"reservation":"None"}},{"title":"Cancelled bookings","screen":"bookings","vars":{"reservation":"Cancelled"}}],"journeys":[{"title":"From class search to cancellation","start":"welcome","steps":[{"action":"skip","screen":"browse"},{"field":"query","type":"input","value":"Wheel"},{"inspect":{"title":"Check wheel class search results","selector":".course-list","text":["Wheel throwing"]}},{"action":"open-wheel","screen":"class","vars":{"course":"Wheel throwing"}},{"action":"choose","screen":"schedule","keep":["course"]},{"field":"date","selector":"button[value='28']","type":"click","value":28},{"field":"time","type":"select","value":"16:00"},{"field":"guests","type":"select","value":"2 guests"},{"action":"continue","screen":"checkout","keep":["course","date","time","guests"]},{"field":"name","type":"input","value":"Alex"},{"field":"email","type":"input","value":"wheel@example.com"},{"field":"memo","type":"input","value":"Check the tools"},{"field":"agreed","type":"click","value":true},{"action":"confirm","screen":"confirm","keep":["course","date","time","guests","name","email","memo","agreed"]},{"action":"fail","screen":"payment-error","keep":["course","date","time","guests","name","email","memo","agreed"],"vars":{"reservation":"None"}},{"action":"retry","screen":"confirm","keep":["course","date","time","guests","name","email","memo","agreed","reservation"]},{"action":"pay","screen":"success","vars":{"reservation":"Booked","bookedCourse":"Wheel throwing","bookedDate":28,"bookedTime":"16:00","bookedGuests":"2 guests","bookedName":"Alex","bookedEmail":"wheel@example.com"}},{"inspect":{"title":"Check the confirmed session and total","selector":".info-rows","text":["Wheel throwing","Nov 28 · 16:00","2 guests","KRW 96,000"]}},{"action":"bookings","screen":"bookings","vars":{"reservation":"Booked"}},{"inspect":{"title":"Check the class and booking status","selector":".reservation-card","text":["Booked","Wheel throwing","Nov 28 · 16:00"]}},{"action":"detail","screen":"booking","vars":{"reservation":"Booked"}},{"action":"cancel","screen":"cancel"},{"action":"close","selector":".paper-dismiss","screen":"booking","keep":["reservation","bookedCourse","bookedDate","bookedTime"]},{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"},"keep":["bookedCourse","bookedDate","bookedTime"]},{"action":"bookings","screen":"bookings","vars":{"reservation":"Cancelled"}},{"inspect":{"title":"Check the cancelled booking","selector":".reservation-card","text":["Cancelled","Wheel throwing","Nov 28 · 16:00"]}}]}],"recovery":[{"title":"Back from setup","start":"welcome","steps":[{"action":"start","screen":"setup"},{"action":"back","screen":"welcome"}]},{"title":"Dismiss filters","start":"browse","steps":[{"action":"filters","screen":"filters"},{"action":"close","screen":"browse","keep":["area","category","query"],"selector":".paper-dismiss","select":{"area":"Yeonnam"}}],"initial":{"area":"Seongsu","category":"Wheel","query":"Wheel"}},{"title":"Back from class details","start":"browse","steps":[{"action":"open-wheel","screen":"class"},{"action":"back","screen":"browse","keep":["query","area","category"]}],"initial":{"query":"Wheel","area":"Seongsu","category":"Wheel"}},{"title":"Back from checkout and scheduling","start":"schedule","steps":[{"action":"continue","screen":"checkout"},{"action":"back","screen":"schedule","keep":["name","email","agreed","date","time","guests","memo","course"]},{"action":"back","screen":"class","keep":["course","date","time","guests"]}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Dismiss payment review","start":"checkout","steps":[{"action":"confirm","screen":"confirm"},{"action":"close","screen":"checkout","keep":["name","email","agreed","date","time","guests","memo","course","reservation"],"selector":".paper-modal-actions button"}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Retry payment and confirm","start":"checkout","steps":[{"action":"confirm","screen":"confirm"},{"action":"fail","screen":"payment-error","keep":["name","email","agreed","date","time","guests","memo","course","reservation"]},{"action":"retry","screen":"confirm","keep":["name","email","agreed","date","time","guests","memo","course","reservation"]},{"action":"pay","screen":"success","vars":{"reservation":"Booked","bookedDate":28,"bookedTime":"16:00","bookedGuests":"2 guests","bookedName":"Robin"}}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Edit details after payment failure","start":"confirm","steps":[{"action":"fail","screen":"payment-error"},{"action":"back","screen":"checkout","keep":["name","email","agreed","date","time","guests","memo","course","reservation"]}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Back from booking details","start":"bookings","steps":[{"action":"detail","screen":"booking"},{"action":"back","screen":"bookings","keep":["reservation","bookedDate","bookedTime","bookedCourse"]}],"initial":{"reservation":"Booked"}},{"title":"Dismiss and confirm cancellation","start":"bookings","steps":[{"action":"detail","screen":"booking"},{"action":"cancel","screen":"cancel"},{"action":"close","screen":"booking","keep":["reservation"],"selector":".paper-dismiss"},{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"}},{"action":"bookings","screen":"bookings","vars":{"reservation":"Cancelled"}}],"initial":{"reservation":"Booked"}},{"title":"Check the list after cancellation","start":"booking","initial":{"reservation":"Booked"},"steps":[{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"}},{"action":"bookings","screen":"bookings","vars":{"reservation":"Cancelled"}}]},{"title":"Missing required booking details","start":"checkout","steps":[{"action":"confirm","screen":"checkout","blocked":true}]}]},"locale":"en","positions":{"welcome":{"x":0,"y":0},"setup":{"x":1,"y":0},"browse":{"x":2.22,"y":0},"filters":{"x":3.22,"y":0},"search-empty":{"x":4.22,"y":0},"class":{"x":5.22,"y":0},"schedule":{"x":0,"y":1.3},"checkout":{"x":1,"y":1.3},"confirm":{"x":2,"y":1.3},"payment-error":{"x":1,"y":2.48},"success":{"x":2,"y":2.48},"bookings":{"x":3.26,"y":1.3},"booking":{"x":3.26,"y":2.48},"cancel":{"x":4.68,"y":2.48},"cancelled":{"x":4.62,"y":1.15},"settings":{"x":5.6,"y":2.48}}},"id":"pottery-booking-en","device":"mobile"}</script>
+  <script id="flow-data" type="application/json">{"title":"Pottery class booking","goal":"Find a pottery class, book a place and manage the booking.","start":"welcome","entries":["browse"],"vars":{"area":"All","category":"All","level":"First class","reminders":true,"newsletter":false,"query":"","course":"Handbuilding","date":21,"time":"14:00","guests":"1 guest","name":"","email":"","memo":"","agreed":false,"reservation":"None","bookedCourse":"Handbuilding","bookedDate":21,"bookedTime":"14:00","bookedGuests":"1 guest","bookedName":"Robin","bookedEmail":"seoyun@example.com"},"stages":["Get started","Find a class","Book a class","Manage bookings","Preferences"],"screens":[{"id":"welcome","brief":"Let a first-time visitor set preferences or go straight to the classes.","number":"01.01","title":"Welcome","stage":0,"slot":0,"origin":"inferred","actions":[{"id":"start","label":"Set preferences","to":"setup"},{"id":"skip","label":"Browse classes","to":"browse","kind":"secondary"}],"uxConditions":["Skipping setup opens all classes with no filters.","Save preferences to enter the list, or return to the welcome screen."]},{"id":"setup","brief":"Choose a neighborhood, experience level and notification preferences.","number":"01.02","title":"Preferences","stage":0,"slot":1,"origin":"inferred","actions":[{"id":"save","label":"Find classes","to":"browse"},{"id":"back","label":"Back","to":"welcome","kind":"back"}],"uxConditions":["The saved neighborhood filters the class list. Experience is stored for this session.","Booking reminders and class news are independent. Only reminders are on by default."]},{"id":"browse","brief":"Browse the list or narrow it down by neighborhood and technique.","number":"02.01","title":"Class list","stage":1,"slot":0,"origin":"inferred","actions":[{"id":"filters","label":"Filters","to":"filters","kind":"inline"},{"id":"open-hand","label":"Handbuilding","to":"class","kind":"inline","set":{"course":"Handbuilding"}},{"id":"open-wheel","label":"Wheel throwing","to":"class","kind":"inline","set":{"course":"Wheel throwing"}},{"id":"open-glaze","label":"Glaze painting","to":"class","kind":"inline","set":{"course":"Glaze painting"}},{"id":"empty","label":"No results","to":"search-empty","kind":"inline"},{"id":"bookings","label":"My bookings","to":"bookings","kind":"tab"},{"id":"settings","label":"Settings","to":"settings","kind":"tab"}],"uxConditions":["Search matches class names, areas and techniques. Both filters must match.","Clearing the search keeps the filters. Removing a filter only clears that filter.","Submitting a search with no matches opens the empty state."]},{"id":"filters","brief":"Choose a neighborhood and technique, then apply them to the list.","number":"02.02","title":"Class filters","stage":1,"slot":1,"origin":"inferred","actions":[{"id":"apply","label":"Apply filters","to":"browse"},{"id":"close","label":"Close filters","to":"browse","kind":"close"}],"uxConditions":["Filter choices take effect when applied.","Closing the dialog restores the previous search and filters."]},{"id":"search-empty","brief":"Show what the visitor searched for and provide a way back to all classes.","number":"02.03","title":"Empty results","stage":1,"slot":2,"origin":"inferred","actions":[{"id":"clear","label":"Reset search and filters","to":null,"set":{"query":"","area":"All","category":"All"}}],"preview":{"query":"woodwork"},"uxConditions":["Show the empty state when the current query and filters have no matches.","Reset clears the query and both filters."]},{"id":"class","brief":"Read the class details before choosing a session.","number":"02.04","title":"Class details","stage":1,"slot":3,"origin":"inferred","actions":[{"id":"choose","label":"Choose a session","to":"schedule"},{"id":"back","label":"Class list","to":"browse","kind":"back"}],"uxConditions":["Carry the class name and price into the booking.","Keep the query and filters when returning to the list."]},{"id":"schedule","brief":"Choose a date, start time and party size before entering contact details.","number":"03.01","title":"Choose a session","stage":2,"slot":0,"origin":"inferred","actions":[{"id":"continue","label":"Enter booking details","to":"checkout"},{"id":"back","label":"Class details","to":"class","kind":"back"}],"uxConditions":["November 21, 22, 28 and 29 are available in this demo.","Choose 11:00, 14:00 or 16:00 and one to three guests. Carry the selections into checkout."]},{"id":"checkout","brief":"Collect contact details while retaining the chosen session.","number":"03.02","title":"Booking details","stage":2,"slot":1,"origin":"inferred","actions":[{"id":"confirm","label":"Review booking","to":"confirm"},{"id":"back","label":"Choose a session","to":"schedule","kind":"back"}],"uxConditions":["Name, email and acknowledgment are required. Keep the form open on invalid input.","Name accepts 32 characters. Email and the optional request accept 80 each."]},{"id":"confirm","brief":"Review the class, session, contact details and total before paying.","number":"03.03","title":"Review payment","stage":2,"slot":2,"origin":"inferred","actions":[{"id":"pay","label":"Confirm payment","to":"success","set":{"reservation":"Booked"}},{"id":"close","label":"Back to details","to":"checkout","kind":"close"},{"id":"fail","label":"Simulate payment failure","to":"payment-error","kind":"simulation"}],"preview":{"name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Multiply the price per guest by the party size.","Closing or failing payment preserves the draft. Save booking details only on success."]},{"id":"payment-error","brief":"Keep the session and contact details after a failed payment. Complete the booking only once.","number":"03.04","title":"Payment failed","stage":2,"slot":3,"origin":"inferred","actions":[{"id":"retry","label":"Retry payment","to":null},{"id":"back","label":"Edit booking details","to":"checkout","kind":"back"}],"preview":{"name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["A failed payment leaves the booking unconfirmed and keeps the draft.","Retry opens the same payment review. Return to the form to make changes."]},{"id":"success","brief":"Show confirmation and let the visitor find the booking again.","number":"03.05","title":"Booking confirmed","stage":2,"slot":4,"origin":"inferred","actions":[{"id":"bookings","label":"View my bookings","to":"bookings"},{"id":"home","label":"Browse more classes","to":"browse","kind":"secondary"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"end":true,"uxConditions":["A toast simulates the confirmation email.","The reference and price reflect the confirmed booking. Later changes apply to the next draft."]},{"id":"bookings","brief":"Find the confirmed booking and its cancellation status.","number":"04.01","title":"My bookings","stage":3,"slot":0,"origin":"inferred","actions":[{"id":"detail","label":"View booking","to":"booking","kind":"inline","when":{"reservation":"Booked"}},{"id":"browse","label":"Classes","to":"browse","kind":"tab"},{"id":"settings","label":"Settings","to":"settings","kind":"tab"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Show an empty state before the first booking. Open details for an active booking.","Show cancelled bookings in the list. This demo keeps the most recent booking."]},{"id":"booking","brief":"Show the confirmed details and ask before cancelling.","number":"04.02","title":"Booking details","stage":3,"slot":1,"origin":"inferred","actions":[{"id":"cancel","label":"Cancel booking","to":"cancel"},{"id":"back","label":"My bookings","to":"bookings","kind":"back"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Use the class, session, guests and contact details saved at payment.","Open cancellation review before changing the booking."]},{"id":"cancel","brief":"Closing preserves the booking. Confirming changes its status.","number":"04.03","title":"Review cancellation","stage":3,"slot":2,"origin":"inferred","actions":[{"id":"cancel","label":"Confirm cancellation","to":"cancelled","set":{"reservation":"Cancelled"}},{"id":"close","label":"Keep booking","to":null,"kind":"close"}],"preview":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true},"uxConditions":["Closing the dialog or pressing Escape keeps the booking active.","Confirming changes the status and opens the cancellation receipt."]},{"id":"cancelled","brief":"Show the cancellation result and let the visitor find it in the list.","number":"04.04","title":"Booking cancelled","stage":3,"slot":3,"origin":"inferred","actions":[{"id":"bookings","label":"View my bookings","to":"bookings"},{"id":"browse","label":"Browse more classes","to":"browse","kind":"secondary"}],"preview":{"reservation":"Cancelled"},"end":true,"uxConditions":["The cancelled class remains listed with its status.","Start a new booking from the class list."]},{"id":"settings","brief":"Reopening settings restores the saved area and notification preferences.","number":"05.01","title":"Settings","stage":4,"slot":0,"origin":"inferred","actions":[{"id":"save","label":"Save settings","to":"browse"},{"id":"browse","label":"Classes","to":"browse","kind":"tab"},{"id":"bookings","label":"My bookings","to":"bookings","kind":"tab"}],"uxConditions":["The saved neighborhood also applies to the class list.","Area, experience and notification preferences persist in this session."]}],"scenarios":[{"id":"first","title":"First visit and booking","start":"welcome","steps":[{"action":"start","screen":"setup"},{"action":"save","screen":"browse"},{"action":"open-hand","screen":"class"},{"action":"choose","screen":"schedule"},{"action":"continue","screen":"checkout"},{"action":"confirm","hint":"Enter a name and email, then accept the booking terms.","screen":"confirm"},{"action":"pay","screen":"success","vars":{"reservation":"Booked"}}]},{"id":"repeat","title":"Filter and book a class","start":"browse","steps":[{"action":"filters","screen":"filters"},{"action":"apply","hint":"Choose Seongsu and Wheel, then apply the filters.","screen":"browse"},{"action":"open-wheel","screen":"class","vars":{"course":"Wheel throwing"}},{"action":"choose","screen":"schedule"},{"action":"continue","screen":"checkout"},{"action":"confirm","hint":"Enter a name and email, then accept the booking terms.","screen":"confirm"},{"action":"pay","screen":"success","vars":{"reservation":"Booked"}}]},{"id":"empty","title":"Recover from empty search","start":"browse","steps":[{"action":"empty","hint":"Search for woodwork and open the empty results screen.","screen":"search-empty"},{"action":"clear","screen":"browse","vars":{"query":"","category":"All"}}]},{"id":"payment","title":"Retry a failed payment","start":"confirm","steps":[{"action":"fail","screen":"payment-error"},{"action":"retry","screen":"confirm"},{"action":"pay","screen":"success","vars":{"reservation":"Booked"}}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true}},{"id":"cancel","title":"Review and cancel a booking","start":"success","steps":[{"action":"bookings","screen":"bookings"},{"action":"detail","screen":"booking"},{"action":"cancel","screen":"cancel"},{"action":"close","screen":"booking","vars":{"reservation":"Booked"}},{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"}},{"action":"bookings","screen":"bookings"}],"initial":{"reservation":"Booked","name":"Robin","email":"seoyun@example.com","agreed":true}},{"id":"settings","title":"Save preferences","start":"settings","steps":[{"action":"save","screen":"browse"},{"action":"settings","screen":"settings"}]},{"id":"session-review","title":"Choose a session and review","start":"schedule","steps":[{"action":"continue","screen":"checkout"},{"action":"confirm","hint":"Enter a name and email, then accept the booking terms.","screen":"confirm"}]}],"proposals":[{"id":"resume-payment","title":"Retry with the same booking","reason":"Return to payment confirmation with the selected class, time, guests and contact details.","changes":[{"screen":"payment-error","action":{"id":"retry","label":"Retry payment","to":"confirm"}}]},{"id":"reset-search","title":"Clear filters and return to classes","reason":"Clear the search and filters and show the available classes again.","changes":[{"screen":"search-empty","action":{"id":"clear","label":"Reset search and filters","to":"browse","set":{"query":"","area":"All","category":"All"}}}]},{"id":"keep-booking","title":"Close and keep the booking","reason":"Closing the cancellation dialog should return to the booking details with the reservation intact.","changes":[{"screen":"cancel","action":{"id":"close","label":"Keep booking","to":"booking","kind":"close"}}]}],"decisions":[{"screen":"cancel","question":"What cancellation deadline and refund terms does the studio use?"},{"screen":"payment-error","question":"How should payment status be checked after a timeout?"}],"review":{"renderer":"workshop","groupDirection":"vertical","artboard":{"width":390,"height":844},"samples":[{"route":"first","title":"First visit and booking","task":"Choose preferences and book a class.","check":"Check that the session and contact details reach payment review."},{"route":"repeat","title":"Filter and book a class","task":"Filter to Seongsu and Wheel, then book the wheel class.","check":"Check that both the class list and filter chips update."},{"route":"empty","title":"Recover from empty search","task":"Search for woodwork, then reset the filters.","check":"Check the query and recover the full class list."},{"route":"payment","title":"Retry a failed payment","task":"Simulate a failed payment, then retry.","check":"Check the session and contact details and confirm once."},{"route":"cancel","title":"Review and cancel a booking","task":"Dismiss the cancellation dialog, reopen it, cancel and review the list.","check":"Closing keeps the booking. Confirming changes its status."},{"route":"settings","title":"Save preferences","task":"Turn off reminders, save settings and reopen them.","check":"Check the saved reminder and neighborhood values."}],"source":"A fictional pottery class service for reviewing booking and recovery flows.","opinions":[{"screen":"search-empty","text":"Decide whether an empty search should clear the query alone or all filters."},{"screen":"payment-error","text":"Place retry and edit actions alongside the failure message."}],"audit":{"testMode":{"screen":"cancel","actions":{"close":{"to":"browse"},"cancel":{"set":{"reservation":"Booked"}}}},"fixtures":[{"title":"Valid booking details","screen":"checkout","vars":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Empty search","screen":"browse","vars":{"query":"woodwork"},"expects":["empty"]},{"title":"Filtered classes","screen":"browse","vars":{"area":"Seongsu","category":"Wheel"}},{"title":"Empty bookings","screen":"bookings","vars":{"reservation":"None"}},{"title":"Cancelled bookings","screen":"bookings","vars":{"reservation":"Cancelled"}}],"journeys":[{"title":"From class search to cancellation","start":"welcome","steps":[{"action":"skip","screen":"browse"},{"field":"query","type":"input","value":"Wheel"},{"inspect":{"title":"Check wheel class search results","selector":".course-list","text":["Wheel throwing"]}},{"action":"open-wheel","screen":"class","vars":{"course":"Wheel throwing"}},{"action":"choose","screen":"schedule","keep":["course"]},{"field":"date","selector":"button[value='28']","type":"click","value":28},{"field":"time","type":"select","value":"16:00"},{"field":"guests","type":"select","value":"2 guests"},{"action":"continue","screen":"checkout","keep":["course","date","time","guests"]},{"field":"name","type":"input","value":"Alex"},{"field":"email","type":"input","value":"wheel@example.com"},{"field":"memo","type":"input","value":"Check the tools"},{"field":"agreed","type":"click","value":true},{"action":"confirm","screen":"confirm","keep":["course","date","time","guests","name","email","memo","agreed"]},{"action":"fail","screen":"payment-error","keep":["course","date","time","guests","name","email","memo","agreed"],"vars":{"reservation":"None"}},{"action":"retry","screen":"confirm","keep":["course","date","time","guests","name","email","memo","agreed","reservation"]},{"action":"pay","screen":"success","vars":{"reservation":"Booked","bookedCourse":"Wheel throwing","bookedDate":28,"bookedTime":"16:00","bookedGuests":"2 guests","bookedName":"Alex","bookedEmail":"wheel@example.com"}},{"inspect":{"title":"Check the confirmed session and total","selector":".info-rows","text":["Wheel throwing","Nov 28 · 16:00","2 guests","KRW 96,000"]}},{"action":"bookings","screen":"bookings","vars":{"reservation":"Booked"}},{"inspect":{"title":"Check the class and booking status","selector":".reservation-card","text":["Booked","Wheel throwing","Nov 28 · 16:00"]}},{"action":"detail","screen":"booking","vars":{"reservation":"Booked"}},{"action":"cancel","screen":"cancel"},{"action":"close","selector":".paper-dismiss","screen":"booking","keep":["reservation","bookedCourse","bookedDate","bookedTime"]},{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"},"keep":["bookedCourse","bookedDate","bookedTime"]},{"action":"bookings","screen":"bookings","vars":{"reservation":"Cancelled"}},{"inspect":{"title":"Check the cancelled booking","selector":".reservation-card","text":["Cancelled","Wheel throwing","Nov 28 · 16:00"]}}]}],"recovery":[{"title":"Back from setup","start":"welcome","steps":[{"action":"start","screen":"setup"},{"action":"back","screen":"welcome"}]},{"title":"Dismiss filters","start":"browse","steps":[{"action":"filters","screen":"filters"},{"action":"close","screen":"browse","keep":["area","category","query"],"selector":".paper-dismiss","select":{"area":"Yeonnam"}}],"initial":{"area":"Seongsu","category":"Wheel","query":"Wheel"}},{"title":"Back from class details","start":"browse","steps":[{"action":"open-wheel","screen":"class"},{"action":"back","screen":"browse","keep":["query","area","category"]}],"initial":{"query":"Wheel","area":"Seongsu","category":"Wheel"}},{"title":"Back from checkout and scheduling","start":"schedule","steps":[{"action":"continue","screen":"checkout"},{"action":"back","screen":"schedule","keep":["name","email","agreed","date","time","guests","memo","course"]},{"action":"back","screen":"class","keep":["course","date","time","guests"]}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Dismiss payment review","start":"checkout","steps":[{"action":"confirm","screen":"confirm"},{"action":"close","screen":"checkout","keep":["name","email","agreed","date","time","guests","memo","course","reservation"],"selector":".paper-modal-actions button"}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Retry payment and confirm","start":"checkout","steps":[{"action":"confirm","screen":"confirm"},{"action":"fail","screen":"payment-error","keep":["name","email","agreed","date","time","guests","memo","course","reservation"]},{"action":"retry","screen":"confirm","keep":["name","email","agreed","date","time","guests","memo","course","reservation"]},{"action":"pay","screen":"success","vars":{"reservation":"Booked","bookedDate":28,"bookedTime":"16:00","bookedGuests":"2 guests","bookedName":"Robin"}}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Edit details after payment failure","start":"confirm","steps":[{"action":"fail","screen":"payment-error"},{"action":"back","screen":"checkout","keep":["name","email","agreed","date","time","guests","memo","course","reservation"]}],"initial":{"name":"Robin","email":"seoyun@example.com","agreed":true,"date":28,"time":"16:00","guests":"2 guests","memo":"Check the tools"}},{"title":"Back from booking details","start":"bookings","steps":[{"action":"detail","screen":"booking"},{"action":"back","screen":"bookings","keep":["reservation","bookedDate","bookedTime","bookedCourse"]}],"initial":{"reservation":"Booked"}},{"title":"Dismiss and confirm cancellation","start":"bookings","steps":[{"action":"detail","screen":"booking"},{"action":"cancel","screen":"cancel"},{"action":"close","screen":"booking","keep":["reservation"],"selector":".paper-dismiss"},{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"}},{"action":"bookings","screen":"bookings","vars":{"reservation":"Cancelled"}}],"initial":{"reservation":"Booked"}},{"title":"Check the list after cancellation","start":"booking","initial":{"reservation":"Booked"},"steps":[{"action":"cancel","screen":"cancel"},{"action":"cancel","screen":"cancelled","vars":{"reservation":"Cancelled"}},{"action":"bookings","screen":"bookings","vars":{"reservation":"Cancelled"}}]},{"title":"Missing required booking details","start":"checkout","steps":[{"action":"confirm","screen":"checkout","blocked":true}]}]},"locale":"en","positions":{"welcome":{"x":0,"y":0},"setup":{"x":1,"y":0},"browse":{"x":2.35,"y":0},"filters":{"x":3.35,"y":0},"search-empty":{"x":4.35,"y":0},"class":{"x":5.35,"y":0},"success":{"x":0,"y":1.56},"payment-error":{"x":1.3,"y":1.56},"confirm":{"x":2.65,"y":1.56},"checkout":{"x":4,"y":1.56},"schedule":{"x":5.35,"y":1.56},"bookings":{"x":0,"y":3.12},"booking":{"x":1.3,"y":3.12},"cancel":{"x":2.65,"y":3.12},"cancelled":{"x":4,"y":3.12},"settings":{"x":5.35,"y":3.12}}},"id":"pottery-booking-en","device":"mobile"}</script>
   <script id="build-data" type="application/json">{"flowPath":"release/example/pottery-booking.en.flow.json"}</script>
   <script>'use strict';
 
@@ -1999,9 +2049,10 @@ function createConnections(canvas, frames, pitch, annotations = []) {
     const route=getRoute(key);
     if (!route) return;
     const highlighted = tone!=='normal';
-    ctx.globalAlpha = dimmed ? .22 : 1;
+    ctx.globalAlpha = dimmed ? .60 : 1;
     ctx.strokeStyle=tone==='issue' ? issue : highlighted ? accent : muted;
-    ctx.lineWidth=highlighted ? stroke : mutedStroke;
+    const unit = 1/ctx.getTransform().a;
+    ctx.lineWidth=highlighted ? Math.max(stroke,2.4*unit) : Math.max(mutedStroke,.85*unit);
     ctx.setLineDash(highlighted ? [] : dash);
     ctx.stroke(route.path);
     ctx.setLineDash([]);
@@ -3006,8 +3057,8 @@ function selectVerificationStep(index,centerScreen=true) {
   $('flow-step-detail').textContent = step ?
     auditScreenName(step.from)+' · '+step.label+(step.to ? ' → '+auditScreenName(step.to) : '') :
     ui(`${auditScreenName(route.start)}에서 검증 시작`,`Start on ${auditScreenName(route.start)}`);
-  if (centerScreen) zoom = undefined;
   select(id);
+  if (centerScreen) center(true,true);
 }
 
 function verificationBounds() {
@@ -3031,8 +3082,7 @@ function verificationBounds() {
 
 function visibleCanvasFrame(contentWidth,contentHeight) {
   const view = canvas.getBoundingClientRect();
-  const tools = document.querySelector('.canvas-tools').getBoundingClientRect();
-  const base = {left:14,top:14,right:view.width-14,bottom:Math.max(15,tools.top-view.top-10)};
+  const base = {left:14,top:14,right:view.width-14,bottom:view.height-14};
   const panel = document.querySelector('.review-sidebar').getBoundingClientRect();
   const available = panel.bottom>view.top+base.top && panel.right>view.left+base.left ?
     [{...base,left:panel.right-view.left+14},{...base,top:panel.bottom-view.top+14}] : [base];
@@ -3066,7 +3116,7 @@ function openVerificationFlow(route, {inspectEnd = false,keepFocus = false} = {}
   }
   verificationFlow = {route,previous,snapshots,badges:verificationBadges(route),edges:verificationEdges(route)};
   $('route-picker').hidden = true;
-  $('route-stop').hidden = true;
+  $('route-warning').hidden = true;
   renderScenarioGuide();
   const flowPanel = $('verification-flow');
   const inReview = !$('review').hidden;
@@ -3105,21 +3155,22 @@ function openVerificationFlow(route, {inspectEnd = false,keepFocus = false} = {}
   $('flow-steps').scrollLeft = Math.max(0,selected.offsetLeft-$('flow-steps').offsetLeft-10);
 }
 
-function closeVerificationFlow(restoreFocus = true) {
+function closeVerificationFlow(restoreFocus = true, keepScreen = false) {
   if (!verificationFlow) return;
   const {previous} = verificationFlow;
   verificationFlow = undefined;
   $('route-picker').hidden = $('route-picker').options.length===1;
-  $('route-stop').hidden = !overviewRoute?.issue;
+  updateScreenNotes();
   $('verification-flow').hidden = true;
   $('scenario-guide').after($('verification-flow'));
   canvas.removeAttribute('data-verification');
   closeRequestEditor();
   closeDescription();
-  select(previous.active);
+  select(keepScreen ? active : previous.active);
   for (const id of artboards.keys()) renderBoard(id);
   syncVerificationBoards();
-  if (previous.device===selectedDevice) {
+  if (keepScreen) focusWithNeighbors();
+  else if (previous.device===selectedDevice) {
     slide = undefined;
     zoom = previous.zoom ?? fitZoom();
     fittingOverview = previous.fittingOverview;
@@ -3274,7 +3325,7 @@ function selectReviewItem(item, {toggle = false, scroll = false} = {}) {
   else {
     closeVerificationFlow(false);
     select(item.screen);
-    center(false,true);
+    center(true,true);
   }
   if (scroll || toggle) {
     $('findings').querySelector('.review-item[aria-expanded="true"]').scrollIntoView({block:'nearest'});
@@ -3311,15 +3362,18 @@ function renderRequirementPanel(audit,findings = []) {
   else selectedReviewRow = undefined;
 }
 
-function setReviewOpen(open) {
+function setReviewOpen(open, keepScreen = false) {
   $('work-area').toggleAttribute('data-review-open',open);
   $('review-open').setAttribute('aria-expanded',String(open));
   $('run-checks').hidden = !open;
   $('review').hidden = !open;
+  placeWorld();
   if (!open) {
-    closeVerificationFlow(false);
+    closeVerificationFlow(false,keepScreen);
     return;
   }
+  closeRequestEditor();
+  closeDescription();
   renderManualScenarios();
   renderTrace();
 }
@@ -3883,7 +3937,7 @@ const screenToolsWidth = 78;
 const touches = new Map();
 let pinch;
 let systemPinch;
-const pitch = { x: screenWidth + 140, y: screenHeight + 114 };
+const pitch = { x: screenWidth + 140, y: screenHeight + 164 };
 let previews = new Map();
 let model = original;
 let screens = Wireflow.screensById(model);
@@ -3912,7 +3966,7 @@ let {requests,drafts,copyChoices} = savedRequests;
 let editingRequest;
 let requestHighlight;
 $('sample-name').textContent = original.title;
-document.title = original.title+' · XU Wireflow Review';
+document.title = 'XU Wireflow Review | '+original.title;
 $('review-source').textContent = original.review.source || original.source || '';
 $('manual-review').hidden = !original.scenarios.length;
 $('test-mode').hidden = !original.review.audit?.testMode;
@@ -4001,8 +4055,18 @@ function positionInspector() {
   const bottom = top+screenHeight*zoom;
   const {width,height} = centeredSize;
   const above = left<screenToolsWidth+16 && top>=89;
-  const xAnchor = Math.max(8,Math.min(width-screenToolsWidth-8,above ? left : left-screenToolsWidth-8));
-  const yAnchor = Math.max(8,Math.min(height-76,above ? top-89 : top));
+  let xAnchor = Math.max(8,Math.min(width-screenToolsWidth-8,above ? left : left-screenToolsWidth-8));
+  let yAnchor = Math.max(8,Math.min(height-76,above ? top-89 : top));
+  if (!$('review').hidden) {
+    const panel = $('review').closest('.review-sidebar').getBoundingClientRect();
+    const view = canvas.getBoundingClientRect();
+    const beside = panel.right-view.left+8;
+    const below = panel.bottom-view.top+8;
+    if (xAnchor<beside && yAnchor<below) {
+      if (beside+screenToolsWidth<=width) xAnchor = beside;
+      else yAnchor = Math.min(height-76,below);
+    }
+  }
   tools.hidden = layoutEditing || fittingOverview || right<=0 || left>=width || bottom<=0 || top>=height;
   tools.style.left = xAnchor+'px';
   tools.style.top = yAnchor+'px';
@@ -4041,6 +4105,8 @@ function renderCamera(now) {
   const keepDragging = trackLayoutDrag(now);
   const transform = 'translate(' + offset.x + 'px,' + offset.y + 'px) scale(' + zoom + ')';
   canvas.toggleAttribute('data-overview',fittingOverview);
+  canvas.style.setProperty('--screen-label-size',Math.min(52,Math.max(16,11/zoom))+'px');
+  canvas.style.setProperty('--group-title-size',Math.min(64,Math.max(23,14/zoom))+'px');
   canvas.style.setProperty('--route-ring',Math.max(3,2/zoom)+'px');
   $('world').style.transform = transform;
   $('groups').style.transform = transform;
@@ -4072,7 +4138,7 @@ function center(animate = false, fit = false) {
   const p = position(active);
   const reviewing = verificationFlow || !$('review').hidden;
   const frame = reviewing ? visibleCanvasFrame(screenWidth+100,screenHeight+82) : {left:0,right:width,top:0,bottom:height};
-  const next = fit || zoom === undefined ? reviewing && frame.scale ? Math.min(1,frame.scale) : fitZoom() : zoom;
+  const next = fit || zoom === undefined ? reviewing && frame.scale ? Math.min(1,frame.scale) : fitZoom() : slide?.toZoom ?? zoom;
   fittingOverview = false;
   if (verificationFlow) verificationFlow.fitted = false;
   moveCamera({x:(frame.left+frame.right)/2-(p.x+screenWidth/2)*next,
@@ -4161,6 +4227,37 @@ function populateRoutePicker() {
   picker.hidden = picker.options.length===1;
 }
 
+function routeProposals() {
+  const issue = overviewRoute?.issue;
+  if (testRun) return [];
+  if (issue?.screen!==active) return (model.proposals || []).filter(p=>!appliedProposals.has(p.id) && p.changes.some(c=>c.screen===active));
+  const scenarioFinding = 'scenario/'+$('route-picker').value;
+  return (model.proposals || []).filter(proposal=>proposal.finding===scenarioFinding ||
+    proposal.changes.some(change=>change.screen===issue.screen && change.action.id===issue.action));
+}
+
+function openRouteProposals() {
+  const dialog = $('route-proposals');
+  const choices = routeProposals();
+  if (!choices.length) return;
+  $('route-proposals-title').textContent = ui('개선안 · ','Proposed fixes · ')+auditScreenName(active);
+  $('route-proposal-error').textContent = '';
+  $('route-proposal-list').replaceChildren(...choices.map(proposal=>{
+    const control = button(ui('개선안 적용','Apply fix'),'tool primary',()=>{
+      if (applyReview(proposal.id)) {
+        dialog.close();
+        artboards.get(active).querySelector('.screen-label').focus({preventScroll:true});
+      } else {
+        $('route-proposal-error').textContent = $('review-request-status').textContent;
+      }
+    });
+    control.dataset.proposal = proposal.id;
+    control.setAttribute('aria-label',control.textContent+' · '+proposal.title);
+    return write(element('section'),element('h3','',proposal.title),element('p','',proposal.reason),control);
+  }));
+  dialog.showModal();
+}
+
 function refreshOverviewRoute() {
   const value = $('route-picker').value;
   let scenario = model.scenarios.find(item => item.id===value);
@@ -4170,14 +4267,29 @@ function refreshOverviewRoute() {
   }
   overviewRoute = scenario ? modelVerificationRoute(scenario) : undefined;
   if (overviewRoute) overviewRoute.edges = verificationEdges(overviewRoute);
-  const issue = overviewRoute?.issue;
-  $('route-stop').hidden = !issue;
-  $('route-stop').textContent = issue ? ui('경로 확인 필요 · ','Path needs review · ')+auditScreenName(issue.screen) : '';
+  updateScreenNotes();
   markRouteControls($('simulation'),active);
   for (const [id,board] of artboards) {
     const device = board.querySelector('.device');
     if (device) markRouteControls(device,id);
   }
+}
+
+function updateScreenNotes() {
+  const issue = overviewRoute?.issue;
+  const onPathIssue = issue?.screen===active;
+  const choices = routeProposals();
+  const broken = screens.get(active)?.actions.find(action=>!screens.has(action.to));
+  const warning = $('route-warning');
+  warning.hidden = Boolean(verificationFlow) || !(onPathIssue || broken || choices.length);
+  $('route-proposals-open').hidden = !choices.length;
+  const action = onPathIssue && screens.get(active).actions.find(item=>item.id===issue.action) || broken;
+  $('route-stop').textContent = (onPathIssue || broken ? ui('경로 확인 필요 · ','Path needs review · ') :
+    ui('개선 제안 · ','Proposed change · ')) + (action?.label || auditScreenName(active));
+  const policy = $('screen-decisions');
+  const questions = model.decisions.filter(item=>item.screen===active).map(item=>item.question);
+  policy.hidden = !questions.length || Boolean(verificationFlow);
+  policy.textContent = questions.length ? ui('기획 미정 · ','Open decision · ')+questions.join(' ') : '';
 }
 
 function renderBoard(id) {
@@ -4241,13 +4353,37 @@ function select(id, takeFocus = false) {
   renderBoard(id);
   renderSimulation();
   renderScenarioGuide();
+  updateScreenNotes();
   if (layoutEditing && fittingOverview) placeWorld();
-  else center(true,fittingOverview);
+  else if (fittingOverview && !verificationFlow) focusWithNeighbors();
+  else center(true);
   if (takeFocus) {
     const board = artboards.get(id);
     const popup = !layoutEditing && board.querySelector('.paper-modal .paper-dismiss');
     (popup || board.querySelector('.screen-label')).focus({preventScroll:true});
   }
+}
+
+function focusWithNeighbors() {
+  const p = position(active);
+  fittingOverview = false;
+  canvas.removeAttribute('data-overview');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  centeredSize = {width:w,height:h};
+  const peers = [...artboards.keys()].filter(id=>id!==active).map(position);
+  // Prefer the closest screen along the same row or column and leave a quarter visible.
+  const neighbors = peers.filter(q=>q.x===p.x || q.y===p.y)
+    .sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));
+  const q = neighbors[0];
+  const dx = q && q.y===p.y ? q.x-p.x : 0;
+  const dy = q && q.x===p.x ? q.y-p.y : 0;
+  const extraX = dx ? Math.min(screenWidth,Math.max(0,Math.abs(dx)-screenWidth)+screenWidth*.25) : 0;
+  const extraY = dy ? Math.min(screenHeight,Math.max(0,Math.abs(dy)-screenHeight)+screenHeight*.25) : 0;
+  // Both sides of the selected screen stay equally visible when the camera stops.
+  const scale = Math.max(.005,Math.min(.94,.70*w/screenWidth,.70*h/screenHeight,
+    w/(screenWidth+2*extraX),h/(screenHeight+2*extraY)));
+  moveCamera({x:w/2-(p.x+screenWidth/2)*scale,
+    y:h/2-(p.y+screenHeight/2)*scale},scale,true);
 }
 
 function syncScreenTools() {
@@ -4481,7 +4617,7 @@ function runScenario(route,title = route.title) {
   message = '';
   if (!$('review').hidden) setReviewOpen(false);
   select(session.screen,true);
-  if (zoom<fitZoom()) center(true,true);
+
 }
 
 function renderManualScenarios() {
@@ -4888,7 +5024,7 @@ function applyReview(proposal) {
     model = selected.size ? Wireflow.applyProposals(original,selected) : original;
   } catch (error) {
     $('review-request-status').textContent = error.message;
-    return;
+    return false;
   }
   closeVerificationFlow(false);
   appliedProposals = selected;
@@ -4901,6 +5037,7 @@ function applyReview(proposal) {
   renderScenarioGuide();
   renderReview();
   $('run-checks').focus({preventScroll:true});
+  return true;
 }
 
 function saveReviewedFlow() {
@@ -4913,6 +5050,7 @@ function saveReviewedFlow() {
 }
 
 function openRequestEditor(request) {
+  if (!$('review').hidden || verificationFlow) setReviewOpen(false,true);
   const screen = screens.get(active);
   closeDescription();
   editingRequest = request;
@@ -4920,7 +5058,7 @@ function openRequestEditor(request) {
   const rows = request ? requestPlanning(request) : planningEvidence(active);
   $('request-planning').replaceChildren(...evidenceNodes(rows));
   $('request-planning').hidden = !rows.length;
-  $('request-text').value = request?.text ?? drafts.get(active) ?? '';
+  $('request-text').value = drafts.get(request ? 'request/'+request.id : active) ?? request?.text ?? '';
   $('request-save').textContent = request ? ui('변경 저장','Save changes') : ui('목록에 담기','Add to list');
   clearRequestFeedback();
   updateRequestSave();
@@ -4951,7 +5089,7 @@ function updateRequestCount(highlight = false) {
   const trigger = $('requests-open');
   $('request-count').textContent = requests.length;
   trigger.toggleAttribute('data-has-requests',requests.length>0);
-  trigger.setAttribute('aria-label',ui(`AI 수정 요청 ${requests.length}건`,`AI change requests: ${requests.length}`));
+  trigger.setAttribute('aria-label',ui(`수정 요청 목록 ${requests.length}건`,`AI change requests: ${requests.length}`));
   if (highlight && !reducedMotion.matches && trigger.animate) {
     requestHighlight?.cancel();
     requestHighlight = trigger.animate([
@@ -4987,6 +5125,7 @@ function saveRequest(event) {
   const text = $('request-text').value.trim();
   const edited = Boolean(editingRequest);
   if (edited) {
+    drafts.delete('request/'+editingRequest.id);
     editingRequest.text = text;
     persistRequests();
     closeRequestEditor(true);
@@ -5003,6 +5142,7 @@ function saveRequest(event) {
 }
 
 function openDescription() {
+  if (!$('review').hidden || verificationFlow) setReviewOpen(false,true);
   closeRequestEditor();
   const screen = screens.get(active);
   $('description-title').textContent = screenNumber(screen.id)+' '+screen.title;
@@ -5059,6 +5199,9 @@ function updateCopyButton() {
 const originalRequestNumber = request => request.number ?? screens.get(request.screen).number;
 
 function openRequestList() {
+  if (!$('review').hidden || verificationFlow) setReviewOpen(false);
+  closeRequestEditor();
+  closeDescription();
   $('request-list-title').textContent = testRun ? ui('테스트 AI 수정 요청','Test AI change requests') : ui('AI 수정 요청','AI change requests');
   $('requests-empty').hidden = requests.length>0;
   $('requests-instructions').hidden = !requests.length;
@@ -5167,6 +5310,9 @@ function createWorld() {
     board.addEventListener('click',event=>{
       if (active!==screen.id && !event.target.closest('button, a, input, select, textarea, summary')) select(screen.id);
     });
+    const hit = button('', 'overview-hit', () => select(screen.id,true));
+    hit.setAttribute('aria-label',ui(screen.title+' 확대','Zoom to '+screen.title));
+    board.append(hit);
     artboards.set(screen.id,board);
     $('world').append(board);
     renderBoard(screen.id);
@@ -5175,6 +5321,7 @@ function createWorld() {
 }
 
 function layoutWorld() {
+  const inset = parseFloat(getComputedStyle(canvas).getPropertyValue('--group-inset'));
   const frames = new Map();
   for (const [id,board] of artboards) {
     const {x,y} = position(id);
@@ -5184,10 +5331,10 @@ function layoutWorld() {
   for (const cluster of $('groups').children) {
     const group = layout.groups.find(item => item.root===cluster.dataset.groupRoot);
     const members = group.ids.map(id => frames.get(id));
-    const left = Math.min(...members.map(frame => frame.x)) - 24;
-    const top = Math.min(...members.map(frame => frame.y)) - 91;
-    const right = Math.max(...members.map(frame => frame.x)) + screenWidth + 24;
-    const bottom = Math.max(...members.map(frame => frame.y)) + screenHeight + 12;
+    const left = Math.min(...members.map(frame => frame.x)) - inset;
+    const top = Math.min(...members.map(frame => frame.y)) - 158;
+    const right = Math.max(...members.map(frame => frame.x)) + screenWidth + inset;
+    const bottom = Math.max(...members.map(frame => frame.y)) + screenHeight + inset;
     Object.assign(cluster.style,{left:left+'px',top:top+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   }
   paintConnections = createConnections($('connections'),frames,pitch,model.review.annotations);
@@ -5248,8 +5395,9 @@ function overviewCamera() {
 function showOverview(animate = false) {
   if (verificationFlow) verificationFlow.fitted = false;
   centeredSize = {width:canvas.clientWidth,height:canvas.clientHeight};
-  const next = overviewCamera();
   fittingOverview = true;
+  canvas.setAttribute('data-overview','');
+  const next = overviewCamera();
   moveCamera(next.offset,next.zoom,animate);
 }
 
@@ -5416,7 +5564,7 @@ function setDevice(preset) {
   screenWidth = preset.width;
   screenHeight = preset.height;
   pitch.x = screenWidth+140;
-  pitch.y = screenHeight+114;
+  pitch.y = screenHeight+164;
   canvas.dataset.device = preset.kind;
   canvas.style.setProperty('--artboard-width',screenWidth+'px');
   canvas.style.setProperty('--artboard-height',screenHeight+'px');
@@ -5480,6 +5628,7 @@ function applyCustomSize(event) {
   $('custom-size').close();
 }
 
+$('route-proposals-open').addEventListener('click',openRouteProposals);
 $('route-picker').addEventListener('change', () => {
   if (layoutEditing) setLayoutEditing(false);
   closeVerificationFlow(false);
@@ -5498,6 +5647,8 @@ $('custom-size').addEventListener('close',()=>$('device-picker').focus({preventS
 $('overview').addEventListener('click',()=>{
   closeRequestEditor();
   closeDescription();
+  if (!$('review').hidden) setReviewOpen(false);
+  closeVerificationFlow(false);
   showOverview(true);
 });
 $('layout-edit').addEventListener('click',()=>setLayoutEditing(false));
@@ -5571,10 +5722,9 @@ $('scenario-close').addEventListener('click',()=>{
 $('flow-fit').addEventListener('click',()=>fitVerificationPath());
 $('flow-close').addEventListener('click',()=>closeVerificationFlow());
 $('request-text').addEventListener('input',event=>{
-  if (!editingRequest) {
-    drafts.set(active,event.target.value);
-    persistRequests();
-  }
+  const key = editingRequest ? 'request/'+editingRequest.id : active;
+  drafts.set(key,event.target.value);
+  persistRequests();
   updateRequestSave();
   clearRequestFeedback();
 });
@@ -5602,7 +5752,6 @@ canvas.addEventListener('pointerdown',event=>{
     }
   }
   if (!event.isPrimary || event.button!==0) return;
-  slide = undefined;
   cancelClick = false;
   const select = event.target.closest('select');
   deferredSelect = select?.showPicker && window===window.top ? select : null;
@@ -5628,6 +5777,7 @@ window.addEventListener('pointermove',event=>{
   if (!drag.panning) {
     if (dx*dx+dy*dy<25) return;
     drag.panning=true;
+    slide = undefined;
     fittingOverview = false;
     if (verificationFlow) verificationFlow.fitted = false;
     cancelClick=true;
@@ -5741,19 +5891,21 @@ canvas.addEventListener('gestureend',event=>{
 createWorld();
 populateRoutePicker();
 const blockedScenario = model.proposals?.length && Wireflow.check(model,ui).scenarios.find(scenario=>!scenario.passed);
-if (blockedScenario) $('route-picker').value = blockedScenario.id;
+const initialRoute = blockedScenario || model.scenarios[0];
+if (initialRoute) $('route-picker').value = initialRoute.id;
 collectEdges();
 populateDevices();
 setDevice(defaultDevice);
 select(active);
-if (blockedScenario) showOverview();
+showOverview();
 updateRequestCount();
 renderRequirementPanel();
 new ResizeObserver(()=>{
   if (centeredSize.width===canvas.clientWidth && centeredSize.height===canvas.clientHeight) return;
   if (verificationFlow?.fitted) fitVerificationPath();
   else if (layoutEditing || fittingOverview) showOverview();
-  else center(false,true);
+  else if (centeredSize.width!==canvas.clientWidth) center(false,true);
+  else center();
 }).observe(canvas);
 const panelResize = new ResizeObserver(positionInspector);
 panelResize.observe($('request-editor'));

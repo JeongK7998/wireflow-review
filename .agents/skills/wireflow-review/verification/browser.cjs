@@ -257,6 +257,8 @@ async function verifyBrowser(htmlPath, compiled, options = {}) {
       const page = await context.newPage();
       page.setDefaultTimeout(timeout);
       await page.goto(url,{waitUntil:'load',timeout:10000});
+      const entry = page.locator('.artboard.is-active .overview-hit');
+      if (await entry.isVisible()) await entry.click();
       const result = await replayPath(page,compiled,path,variant,checks);
       const fresh = result.findings.filter(finding => !findings.has(finding.checkId));
       if (traceDir) {

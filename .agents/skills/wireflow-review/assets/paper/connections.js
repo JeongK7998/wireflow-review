@@ -214,9 +214,10 @@ function createConnections(canvas, frames, pitch, annotations = []) {
     const route=getRoute(key);
     if (!route) return;
     const highlighted = tone!=='normal';
-    ctx.globalAlpha = dimmed ? .22 : 1;
+    ctx.globalAlpha = dimmed ? .60 : 1;
     ctx.strokeStyle=tone==='issue' ? issue : highlighted ? accent : muted;
-    ctx.lineWidth=highlighted ? stroke : mutedStroke;
+    const unit = 1/ctx.getTransform().a;
+    ctx.lineWidth=highlighted ? Math.max(stroke,2.4*unit) : Math.max(mutedStroke,.85*unit);
     ctx.setLineDash(highlighted ? [] : dash);
     ctx.stroke(route.path);
     ctx.setLineDash([]);

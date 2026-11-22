@@ -143,7 +143,7 @@ function selectReviewItem(item, {toggle = false, scroll = false} = {}) {
   else {
     closeVerificationFlow(false);
     select(item.screen);
-    center(false,true);
+    center(true,true);
   }
   if (scroll || toggle) {
     $('findings').querySelector('.review-item[aria-expanded="true"]').scrollIntoView({block:'nearest'});
@@ -180,15 +180,18 @@ function renderRequirementPanel(audit,findings = []) {
   else selectedReviewRow = undefined;
 }
 
-function setReviewOpen(open) {
+function setReviewOpen(open, keepScreen = false) {
   $('work-area').toggleAttribute('data-review-open',open);
   $('review-open').setAttribute('aria-expanded',String(open));
   $('run-checks').hidden = !open;
   $('review').hidden = !open;
+  placeWorld();
   if (!open) {
-    closeVerificationFlow(false);
+    closeVerificationFlow(false,keepScreen);
     return;
   }
+  closeRequestEditor();
+  closeDescription();
   renderManualScenarios();
   renderTrace();
 }

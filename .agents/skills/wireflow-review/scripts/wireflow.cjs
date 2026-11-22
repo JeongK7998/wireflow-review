@@ -7,7 +7,7 @@ const os = require('node:os');
 const {randomUUID} = require('node:crypto');
 const assets = path.join(__dirname, '..', 'assets');
 const wireflow = require(path.join(assets, 'engine.js'));
-const {resolve:resolveLocale} = require(path.join(assets, 'locale.js'));
+const {resolve:resolveLocale,translator} = require(path.join(assets, 'locale.js'));
 const paperStyles = require(path.join(assets, 'paper', 'styles.cjs'));
 const readAsset = name => fs.readFileSync(path.join(assets, name), 'utf8');
 const embed = value => JSON.stringify(value).replace(/</g, '\\u003c');
@@ -134,7 +134,8 @@ async function main(argv) {
   }
   if (command === 'check') {
     const model = readFlow(input);
-    const result = wireflow.check(option ? wireflow.applyProposals(model, option.split(',')) : model);
+    const candidate = option ? wireflow.applyProposals(model, option.split(',')) : model;
+    const result = wireflow.check(candidate,translator(resolveLocale(model)));
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return result.findings.length ? 1 : 0;
   }

@@ -105,8 +105,8 @@ function selectVerificationStep(index,centerScreen=true) {
   $('flow-step-detail').textContent = step ?
     auditScreenName(step.from)+' · '+step.label+(step.to ? ' → '+auditScreenName(step.to) : '') :
     ui(`${auditScreenName(route.start)}에서 검증 시작`,`Start on ${auditScreenName(route.start)}`);
-  if (centerScreen) zoom = undefined;
   select(id);
+  if (centerScreen) center(true,true);
 }
 
 function verificationBounds() {
@@ -130,8 +130,7 @@ function verificationBounds() {
 
 function visibleCanvasFrame(contentWidth,contentHeight) {
   const view = canvas.getBoundingClientRect();
-  const tools = document.querySelector('.canvas-tools').getBoundingClientRect();
-  const base = {left:14,top:14,right:view.width-14,bottom:Math.max(15,tools.top-view.top-10)};
+  const base = {left:14,top:14,right:view.width-14,bottom:view.height-14};
   const panel = document.querySelector('.review-sidebar').getBoundingClientRect();
   const available = panel.bottom>view.top+base.top && panel.right>view.left+base.left ?
     [{...base,left:panel.right-view.left+14},{...base,top:panel.bottom-view.top+14}] : [base];
@@ -165,7 +164,7 @@ function openVerificationFlow(route, {inspectEnd = false,keepFocus = false} = {}
   }
   verificationFlow = {route,previous,snapshots,badges:verificationBadges(route),edges:verificationEdges(route)};
   $('route-picker').hidden = true;
-  $('route-stop').hidden = true;
+  $('route-warning').hidden = true;
   renderScenarioGuide();
   const flowPanel = $('verification-flow');
   const inReview = !$('review').hidden;
@@ -204,21 +203,22 @@ function openVerificationFlow(route, {inspectEnd = false,keepFocus = false} = {}
   $('flow-steps').scrollLeft = Math.max(0,selected.offsetLeft-$('flow-steps').offsetLeft-10);
 }
 
-function closeVerificationFlow(restoreFocus = true) {
+function closeVerificationFlow(restoreFocus = true, keepScreen = false) {
   if (!verificationFlow) return;
   const {previous} = verificationFlow;
   verificationFlow = undefined;
   $('route-picker').hidden = $('route-picker').options.length===1;
-  $('route-stop').hidden = !overviewRoute?.issue;
+  updateScreenNotes();
   $('verification-flow').hidden = true;
   $('scenario-guide').after($('verification-flow'));
   canvas.removeAttribute('data-verification');
   closeRequestEditor();
   closeDescription();
-  select(previous.active);
+  select(keepScreen ? active : previous.active);
   for (const id of artboards.keys()) renderBoard(id);
   syncVerificationBoards();
-  if (previous.device===selectedDevice) {
+  if (keepScreen) focusWithNeighbors();
+  else if (previous.device===selectedDevice) {
     slide = undefined;
     zoom = previous.zoom ?? fitZoom();
     fittingOverview = previous.fittingOverview;

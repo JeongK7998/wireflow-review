@@ -33,7 +33,7 @@ async function capture() {
     await page.evaluate(()=>document.fonts.ready);
     await page.locator('#overview').click();
     await pause(); await shot('01-canvas');
-    await page.locator('#center').click();
+    await page.locator('.artboard.is-active .overview-hit').click();
     await pause(); await shot('02-floor-plan');
     const firstImage=device.locator('img').first();
     assert.equal(await firstImage.evaluate(img=>img.complete && img.naturalWidth),960);
@@ -73,6 +73,7 @@ async function capture() {
     await patched.locator('[data-review-id="read-back"] .review-item').click();
     await patched.locator('[data-review-id="read-back"]').getByRole('button',{name:'인계 기록 화면으로 연결'}).click();
     if (await patched.locator('#review').isVisible()) await patched.locator('#review-open').click();
+    await patched.locator('#canvas-more summary').click();
     await patched.locator('#screen-picker').selectOption('desk');
     const active=patched.locator('.artboard.is-active .device');
     const follow=id=>active.locator('[data-action="'+id+'"]:visible').last().click();

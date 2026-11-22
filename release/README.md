@@ -19,6 +19,8 @@ Read APPLY.md in the attached kit and apply this skill to my project.
 
 3. Open the generated HTML in your browser and follow a path. If a step is missing, copy a change request from that screen into the same chat.
 
+Select a screen to zoom in with its neighbors still visible. Choose **Overview** to return to the map. The **⋯** menu lets you change the highlighted path or device.
+
 ## A closer look
 
 **Mobile · Follow one path across the whole app.** The numbered arrows show which button leads to the next screen. Nearby screens show where empty results or failures fit into the same flow.
@@ -31,4 +33,4 @@ Read APPLY.md in the attached kit and apply this skill to my project.
 
 To try it first, open the included demo in a browser. [Open the English demo](example/pottery-booking.en.html)
 
-For AI tools following a repository link, use the project setup guide. [Setup guide](APPLY.md) · [Download the skill ZIP](wireflow-review-v0.5.4.zip)
+For AI tools following a repository link, use the project setup guide. [Setup guide](APPLY.md) · [Download the skill ZIP](wireflow-review-v0.5.5.zip)

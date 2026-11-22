@@ -42,15 +42,30 @@ async function capture() {
       await page.screenshot({path: path.join(media, name + '.png')});
     }
 
+    async function options() {
+      const menu = page.locator('#canvas-more');
+      if (!await menu.evaluate(el=>el.open)) await menu.locator('summary').click();
+    }
+
+    async function repair(action, proposal) {
+      const before = await page.locator('.artboard.is-active').getAttribute('data-screen');
+      await click(action);
+      assert.equal(await page.locator('.artboard.is-active').getAttribute('data-screen'), before);
+      await page.locator('#route-proposals-open').click();
+      await page.locator('#route-proposals [data-proposal="' + proposal + '"]').click();
+      await click(action);
+    }
+
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     const screen = () => page.locator('.artboard.is-active').getAttribute('data-screen');
+    await options();
     await page.locator('#route-picker').selectOption('repeat');
     await page.locator('#center').click();
     await click('skip');
     await device.locator('[data-control="query"]').fill('woodwork');
     await click('empty');
-    await click('clear');
+    await repair('clear','reset-search');
     await click('filters');
     await device.locator('.paper-modal [data-control="area"]').selectOption('Seongsu');
     await device.locator('.paper-modal input[value="Wheel"]').check();
@@ -73,7 +88,7 @@ async function capture() {
     await click('confirm');
     await page.locator('#simulation [data-action="fail"]').click();
     assert.equal(await screen(), 'payment-error');
-    await click('retry');
+    await repair('retry','resume-payment');
     const summary = await device.locator('.paper-modal').innerText();
     for (const value of ['Wheel throwing', 'Nov 28', '16:00', '2 guests', 'KRW 96,000', 'alex@example.com']) {
       assert.ok(summary.includes(value), value);
@@ -83,13 +98,16 @@ async function capture() {
     await save('booking-mobile-en', 390, 844, 16);
 
     await page.setViewportSize({width: 1430, height: 880});
+    await options();
     await page.locator('#device-picker').selectOption('tablet-landscape');
+    await page.locator('[data-screen="success"] .overview-hit').click();
     await click('bookings');
     await click('detail');
     await click('cancel');
-    await page.keyboard.press('Escape');
+    await repair('close','keep-booking');
     assert.equal(await screen(), 'booking');
     await click('cancel');
+    await options();
     await page.locator('#route-picker').selectOption('cancel');
     await page.locator('#review-open').click();
     await page.locator('#review-scope > summary').click();
@@ -102,6 +120,7 @@ async function capture() {
     await save('booking-tablet-en', 1024, 768, 5);
     await page.locator('#flow-close').click();
     await page.locator('#review-open').click();
+    await options();
     await page.locator('#screen-picker').selectOption('cancel');
     await page.locator('#center').click();
     await click('cancel');

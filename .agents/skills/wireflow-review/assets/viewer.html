@@ -10,18 +10,31 @@
   <div class="workspace">
     <header class="toolbar">
       <div class="identity">
-        <h1 id="sample-name"></h1>
-        <p>XU Wireflow Review</p>
+        <h1>XU Wireflow Review <span class="divider">|</span> <span id="sample-name"></span></h1>
       </div>
-      <div class="tools">
-        <label class="sr-only" for="screen-picker" data-en="Choose a screen">화면 선택</label>
-        <span class="toolbar-picker"><select id="screen-picker"></select></span>
-        <label class="sr-only" for="device-picker" data-en="Device size">기기 해상도</label>
-        <span class="toolbar-picker"><select id="device-picker"></select></span>
-        <button id="test-mode" type="button" class="tool" aria-pressed="false" hidden data-en="Test mode">테스트 모드</button>
+      <div class="canvas-tools" aria-label="캔버스 조작" data-en-aria-label="Canvas controls">
+        <button id="overview" type="button" class="tool" data-en="Overview">전체 보기</button>
+        <button type="button" id="zoom-out" aria-label="축소" data-en-aria-label="Zoom out">−</button>
+        <button type="button" id="zoom-readout" aria-label="현재 확대 비율" data-en-aria-label="Current zoom" disabled></button>
+        <button type="button" id="zoom-in" aria-label="확대" data-en-aria-label="Zoom in">+</button>
+        <details id="canvas-more" class="canvas-more">
+          <summary aria-label="캔버스 도구 더 보기" data-en-aria-label="More canvas tools" title="캔버스 도구 더 보기" data-en-title="More canvas tools">⋯</summary>
+          <div class="canvas-more-panel">
+            <div class="tools">
+              <label class="sr-only" for="screen-picker" data-en="Choose a screen">화면 선택</label>
+              <span class="toolbar-picker"><select id="screen-picker"></select></span>
+              <label class="sr-only" for="device-picker" data-en="Device size">기기 해상도</label>
+              <span class="toolbar-picker"><select id="device-picker"></select></span>
+              <button id="test-mode" type="button" class="tool" aria-pressed="false" hidden data-en="Test mode">테스트 모드</button>
+            </div>
+            <select id="route-picker" class="tool" aria-label="표시할 경로" data-en-aria-label="Show a path"></select>
+            <button type="button" id="center" class="center" data-en="Fit selected screen">선택 화면에 맞춤</button>
+            <button id="experimental-layout" type="button"><span data-en="Edit layout">배치 편집</span> <span data-en="Experimental">실험 기능</span></button>
+          </div>
+        </details>
       </div>
       <button id="requests-open" type="button" class="tool requests-trigger" aria-haspopup="dialog" aria-controls="request-list">
-        <span data-en="AI change requests">AI 수정 요청</span> <span id="request-count" aria-hidden="true">0</span>
+        <span data-en="AI change requests">수정 요청 목록</span> <span id="request-count" aria-hidden="true">0</span>
       </button>
       <div class="layout-toolbar" id="layout-toolbar" hidden>
         <button id="layout-edit" type="button" class="tool" data-en="Finish editing layout">실험 편집 완료</button>
@@ -34,7 +47,7 @@
     <div class="work-area" id="work-area">
       <aside class="review-sidebar" aria-label="Flow 검증" data-en-aria-label="Flow Verification">
         <div class="review-toolbar">
-          <button id="review-open" type="button" class="tool" aria-expanded="false" aria-controls="review" data-en="Flow Verification">Flow 검증</button>
+          <button id="review-open" type="button" class="tool" aria-expanded="false" aria-controls="review" data-en="Flow Verification">흐름 검증</button>
           <button id="run-checks" type="button" class="tool" aria-controls="review-results" hidden data-en="Run checks">검증 실행</button>
         </div>
         <section id="review" aria-label="검증 항목과 결과" data-en-aria-label="Requirements and results" hidden>
@@ -114,18 +127,6 @@
             <button id="description-open" type="button" class="tool" aria-controls="screen-description" aria-expanded="false" data-en="Design rationale">기획 근거</button>
           </div>
         </main>
-        <div class="canvas-tools" aria-label="캔버스 조작" data-en-aria-label="Canvas controls">
-          <button type="button" id="zoom-out" aria-label="축소" data-en-aria-label="Zoom out">−</button>
-          <button type="button" id="zoom-readout" aria-label="현재 확대 비율" data-en-aria-label="Current zoom" disabled></button>
-          <button type="button" id="zoom-in" aria-label="확대" data-en-aria-label="Zoom in">+</button>
-          <button type="button" id="center" class="center" data-en="Fit selected screen">선택 화면에 맞춤</button>
-          <details id="canvas-more" class="canvas-more">
-            <summary aria-label="캔버스 도구 더 보기" data-en-aria-label="More canvas tools" title="캔버스 도구 더 보기" data-en-title="More canvas tools">⋯</summary>
-            <div class="canvas-more-panel">
-              <button id="experimental-layout" type="button"><span data-en="Edit layout">배치 편집</span> <span data-en="Experimental">실험 기능</span></button>
-            </div>
-          </details>
-        </div>
         <aside id="request-editor" class="inspector-panel request-editor" role="region" aria-labelledby="request-title" hidden>
           <header class="dialog-head"><h2 id="request-title"></h2><button id="request-close" type="button" class="tool quiet" aria-label="수정 요청 닫기" data-en-aria-label="Close change request" data-en="Close">닫기</button></header>
           <dl id="request-planning" class="finding-result planning-evidence" hidden></dl>
@@ -157,12 +158,22 @@
       </div>
     </div>
     <footer class="footer">
-      <button id="overview" type="button" class="tool" data-en="Fit all screens">전체 화면 보기</button>
-      <select id="route-picker" class="tool" aria-label="표시할 경로" data-en-aria-label="Show a path"></select>
-      <output id="route-stop" hidden></output>
+      <div id="route-warning" hidden>
+        <output id="route-stop"></output>
+        <button id="route-proposals-open" class="tool soft" type="button" aria-haspopup="dialog" aria-controls="route-proposals" data-en="View proposed fixes" hidden>개선안 보기</button>
+      </div>
+      <output id="screen-decisions" hidden></output>
       <div id="simulation" class="simulation" role="group" aria-label="모의 입력" data-en-aria-label="Simulation controls"></div>
     </footer>
   </div>
+  <dialog id="route-proposals" aria-labelledby="route-proposals-title">
+    <form method="dialog" class="dialog-head">
+      <h2 id="route-proposals-title"></h2>
+      <button class="tool quiet" autofocus data-en="Close">닫기</button>
+    </form>
+    <div id="route-proposal-list"></div>
+    <p id="route-proposal-error" role="alert"></p>
+  </dialog>
   <dialog id="custom-size" aria-labelledby="custom-size-title">
     <form id="custom-size-form">
       <div class="dialog-head"><h2 id="custom-size-title" data-en="Custom screen size">화면 크기 직접 입력</h2></div>

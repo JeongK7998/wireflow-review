@@ -40,7 +40,7 @@ const screenToolsWidth = 78;
 const touches = new Map();
 let pinch;
 let systemPinch;
-const pitch = { x: screenWidth + 140, y: screenHeight + 114 };
+const pitch = { x: screenWidth + 140, y: screenHeight + 164 };
 let previews = new Map();
 let model = original;
 let screens = Wireflow.screensById(model);
@@ -69,7 +69,7 @@ let {requests,drafts,copyChoices} = savedRequests;
 let editingRequest;
 let requestHighlight;
 $('sample-name').textContent = original.title;
-document.title = original.title+' · XU Wireflow Review';
+document.title = 'XU Wireflow Review | '+original.title;
 $('review-source').textContent = original.review.source || original.source || '';
 $('manual-review').hidden = !original.scenarios.length;
 $('test-mode').hidden = !original.review.audit?.testMode;
@@ -158,8 +158,18 @@ function positionInspector() {
   const bottom = top+screenHeight*zoom;
   const {width,height} = centeredSize;
   const above = left<screenToolsWidth+16 && top>=89;
-  const xAnchor = Math.max(8,Math.min(width-screenToolsWidth-8,above ? left : left-screenToolsWidth-8));
-  const yAnchor = Math.max(8,Math.min(height-76,above ? top-89 : top));
+  let xAnchor = Math.max(8,Math.min(width-screenToolsWidth-8,above ? left : left-screenToolsWidth-8));
+  let yAnchor = Math.max(8,Math.min(height-76,above ? top-89 : top));
+  if (!$('review').hidden) {
+    const panel = $('review').closest('.review-sidebar').getBoundingClientRect();
+    const view = canvas.getBoundingClientRect();
+    const beside = panel.right-view.left+8;
+    const below = panel.bottom-view.top+8;
+    if (xAnchor<beside && yAnchor<below) {
+      if (beside+screenToolsWidth<=width) xAnchor = beside;
+      else yAnchor = Math.min(height-76,below);
+    }
+  }
   tools.hidden = layoutEditing || fittingOverview || right<=0 || left>=width || bottom<=0 || top>=height;
   tools.style.left = xAnchor+'px';
   tools.style.top = yAnchor+'px';
@@ -198,6 +208,8 @@ function renderCamera(now) {
   const keepDragging = trackLayoutDrag(now);
   const transform = 'translate(' + offset.x + 'px,' + offset.y + 'px) scale(' + zoom + ')';
   canvas.toggleAttribute('data-overview',fittingOverview);
+  canvas.style.setProperty('--screen-label-size',Math.min(52,Math.max(16,11/zoom))+'px');
+  canvas.style.setProperty('--group-title-size',Math.min(64,Math.max(23,14/zoom))+'px');
   canvas.style.setProperty('--route-ring',Math.max(3,2/zoom)+'px');
   $('world').style.transform = transform;
   $('groups').style.transform = transform;
@@ -229,7 +241,7 @@ function center(animate = false, fit = false) {
   const p = position(active);
   const reviewing = verificationFlow || !$('review').hidden;
   const frame = reviewing ? visibleCanvasFrame(screenWidth+100,screenHeight+82) : {left:0,right:width,top:0,bottom:height};
-  const next = fit || zoom === undefined ? reviewing && frame.scale ? Math.min(1,frame.scale) : fitZoom() : zoom;
+  const next = fit || zoom === undefined ? reviewing && frame.scale ? Math.min(1,frame.scale) : fitZoom() : slide?.toZoom ?? zoom;
   fittingOverview = false;
   if (verificationFlow) verificationFlow.fitted = false;
   moveCamera({x:(frame.left+frame.right)/2-(p.x+screenWidth/2)*next,
@@ -318,6 +330,37 @@ function populateRoutePicker() {
   picker.hidden = picker.options.length===1;
 }
 
+function routeProposals() {
+  const issue = overviewRoute?.issue;
+  if (testRun) return [];
+  if (issue?.screen!==active) return (model.proposals || []).filter(p=>!appliedProposals.has(p.id) && p.changes.some(c=>c.screen===active));
+  const scenarioFinding = 'scenario/'+$('route-picker').value;
+  return (model.proposals || []).filter(proposal=>proposal.finding===scenarioFinding ||
+    proposal.changes.some(change=>change.screen===issue.screen && change.action.id===issue.action));
+}
+
+function openRouteProposals() {
+  const dialog = $('route-proposals');
+  const choices = routeProposals();
+  if (!choices.length) return;
+  $('route-proposals-title').textContent = ui('개선안 · ','Proposed fixes · ')+auditScreenName(active);
+  $('route-proposal-error').textContent = '';
+  $('route-proposal-list').replaceChildren(...choices.map(proposal=>{
+    const control = button(ui('개선안 적용','Apply fix'),'tool primary',()=>{
+      if (applyReview(proposal.id)) {
+        dialog.close();
+        artboards.get(active).querySelector('.screen-label').focus({preventScroll:true});
+      } else {
+        $('route-proposal-error').textContent = $('review-request-status').textContent;
+      }
+    });
+    control.dataset.proposal = proposal.id;
+    control.setAttribute('aria-label',control.textContent+' · '+proposal.title);
+    return write(element('section'),element('h3','',proposal.title),element('p','',proposal.reason),control);
+  }));
+  dialog.showModal();
+}
+
 function refreshOverviewRoute() {
   const value = $('route-picker').value;
   let scenario = model.scenarios.find(item => item.id===value);
@@ -327,14 +370,29 @@ function refreshOverviewRoute() {
   }
   overviewRoute = scenario ? modelVerificationRoute(scenario) : undefined;
   if (overviewRoute) overviewRoute.edges = verificationEdges(overviewRoute);
-  const issue = overviewRoute?.issue;
-  $('route-stop').hidden = !issue;
-  $('route-stop').textContent = issue ? ui('경로 확인 필요 · ','Path needs review · ')+auditScreenName(issue.screen) : '';
+  updateScreenNotes();
   markRouteControls($('simulation'),active);
   for (const [id,board] of artboards) {
     const device = board.querySelector('.device');
     if (device) markRouteControls(device,id);
   }
+}
+
+function updateScreenNotes() {
+  const issue = overviewRoute?.issue;
+  const onPathIssue = issue?.screen===active;
+  const choices = routeProposals();
+  const broken = screens.get(active)?.actions.find(action=>!screens.has(action.to));
+  const warning = $('route-warning');
+  warning.hidden = Boolean(verificationFlow) || !(onPathIssue || broken || choices.length);
+  $('route-proposals-open').hidden = !choices.length;
+  const action = onPathIssue && screens.get(active).actions.find(item=>item.id===issue.action) || broken;
+  $('route-stop').textContent = (onPathIssue || broken ? ui('경로 확인 필요 · ','Path needs review · ') :
+    ui('개선 제안 · ','Proposed change · ')) + (action?.label || auditScreenName(active));
+  const policy = $('screen-decisions');
+  const questions = model.decisions.filter(item=>item.screen===active).map(item=>item.question);
+  policy.hidden = !questions.length || Boolean(verificationFlow);
+  policy.textContent = questions.length ? ui('기획 미정 · ','Open decision · ')+questions.join(' ') : '';
 }
 
 function renderBoard(id) {
@@ -398,13 +456,37 @@ function select(id, takeFocus = false) {
   renderBoard(id);
   renderSimulation();
   renderScenarioGuide();
+  updateScreenNotes();
   if (layoutEditing && fittingOverview) placeWorld();
-  else center(true,fittingOverview);
+  else if (fittingOverview && !verificationFlow) focusWithNeighbors();
+  else center(true);
   if (takeFocus) {
     const board = artboards.get(id);
     const popup = !layoutEditing && board.querySelector('.paper-modal .paper-dismiss');
     (popup || board.querySelector('.screen-label')).focus({preventScroll:true});
   }
+}
+
+function focusWithNeighbors() {
+  const p = position(active);
+  fittingOverview = false;
+  canvas.removeAttribute('data-overview');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  centeredSize = {width:w,height:h};
+  const peers = [...artboards.keys()].filter(id=>id!==active).map(position);
+  // Prefer the closest screen along the same row or column and leave a quarter visible.
+  const neighbors = peers.filter(q=>q.x===p.x || q.y===p.y)
+    .sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));
+  const q = neighbors[0];
+  const dx = q && q.y===p.y ? q.x-p.x : 0;
+  const dy = q && q.x===p.x ? q.y-p.y : 0;
+  const extraX = dx ? Math.min(screenWidth,Math.max(0,Math.abs(dx)-screenWidth)+screenWidth*.25) : 0;
+  const extraY = dy ? Math.min(screenHeight,Math.max(0,Math.abs(dy)-screenHeight)+screenHeight*.25) : 0;
+  // Both sides of the selected screen stay equally visible when the camera stops.
+  const scale = Math.max(.005,Math.min(.94,.70*w/screenWidth,.70*h/screenHeight,
+    w/(screenWidth+2*extraX),h/(screenHeight+2*extraY)));
+  moveCamera({x:w/2-(p.x+screenWidth/2)*scale,
+    y:h/2-(p.y+screenHeight/2)*scale},scale,true);
 }
 
 function syncScreenTools() {
@@ -638,7 +720,7 @@ function runScenario(route,title = route.title) {
   message = '';
   if (!$('review').hidden) setReviewOpen(false);
   select(session.screen,true);
-  if (zoom<fitZoom()) center(true,true);
+
 }
 
 function renderManualScenarios() {
@@ -1045,7 +1127,7 @@ function applyReview(proposal) {
     model = selected.size ? Wireflow.applyProposals(original,selected) : original;
   } catch (error) {
     $('review-request-status').textContent = error.message;
-    return;
+    return false;
   }
   closeVerificationFlow(false);
   appliedProposals = selected;
@@ -1058,6 +1140,7 @@ function applyReview(proposal) {
   renderScenarioGuide();
   renderReview();
   $('run-checks').focus({preventScroll:true});
+  return true;
 }
 
 function saveReviewedFlow() {
@@ -1070,6 +1153,7 @@ function saveReviewedFlow() {
 }
 
 function openRequestEditor(request) {
+  if (!$('review').hidden || verificationFlow) setReviewOpen(false,true);
   const screen = screens.get(active);
   closeDescription();
   editingRequest = request;
@@ -1077,7 +1161,7 @@ function openRequestEditor(request) {
   const rows = request ? requestPlanning(request) : planningEvidence(active);
   $('request-planning').replaceChildren(...evidenceNodes(rows));
   $('request-planning').hidden = !rows.length;
-  $('request-text').value = request?.text ?? drafts.get(active) ?? '';
+  $('request-text').value = drafts.get(request ? 'request/'+request.id : active) ?? request?.text ?? '';
   $('request-save').textContent = request ? ui('변경 저장','Save changes') : ui('목록에 담기','Add to list');
   clearRequestFeedback();
   updateRequestSave();
@@ -1108,7 +1192,7 @@ function updateRequestCount(highlight = false) {
   const trigger = $('requests-open');
   $('request-count').textContent = requests.length;
   trigger.toggleAttribute('data-has-requests',requests.length>0);
-  trigger.setAttribute('aria-label',ui(`AI 수정 요청 ${requests.length}건`,`AI change requests: ${requests.length}`));
+  trigger.setAttribute('aria-label',ui(`수정 요청 목록 ${requests.length}건`,`AI change requests: ${requests.length}`));
   if (highlight && !reducedMotion.matches && trigger.animate) {
     requestHighlight?.cancel();
     requestHighlight = trigger.animate([
@@ -1144,6 +1228,7 @@ function saveRequest(event) {
   const text = $('request-text').value.trim();
   const edited = Boolean(editingRequest);
   if (edited) {
+    drafts.delete('request/'+editingRequest.id);
     editingRequest.text = text;
     persistRequests();
     closeRequestEditor(true);
@@ -1160,6 +1245,7 @@ function saveRequest(event) {
 }
 
 function openDescription() {
+  if (!$('review').hidden || verificationFlow) setReviewOpen(false,true);
   closeRequestEditor();
   const screen = screens.get(active);
   $('description-title').textContent = screenNumber(screen.id)+' '+screen.title;
@@ -1216,6 +1302,9 @@ function updateCopyButton() {
 const originalRequestNumber = request => request.number ?? screens.get(request.screen).number;
 
 function openRequestList() {
+  if (!$('review').hidden || verificationFlow) setReviewOpen(false);
+  closeRequestEditor();
+  closeDescription();
   $('request-list-title').textContent = testRun ? ui('테스트 AI 수정 요청','Test AI change requests') : ui('AI 수정 요청','AI change requests');
   $('requests-empty').hidden = requests.length>0;
   $('requests-instructions').hidden = !requests.length;
@@ -1324,6 +1413,9 @@ function createWorld() {
     board.addEventListener('click',event=>{
       if (active!==screen.id && !event.target.closest('button, a, input, select, textarea, summary')) select(screen.id);
     });
+    const hit = button('', 'overview-hit', () => select(screen.id,true));
+    hit.setAttribute('aria-label',ui(screen.title+' 확대','Zoom to '+screen.title));
+    board.append(hit);
     artboards.set(screen.id,board);
     $('world').append(board);
     renderBoard(screen.id);
@@ -1332,6 +1424,7 @@ function createWorld() {
 }
 
 function layoutWorld() {
+  const inset = parseFloat(getComputedStyle(canvas).getPropertyValue('--group-inset'));
   const frames = new Map();
   for (const [id,board] of artboards) {
     const {x,y} = position(id);
@@ -1341,10 +1434,10 @@ function layoutWorld() {
   for (const cluster of $('groups').children) {
     const group = layout.groups.find(item => item.root===cluster.dataset.groupRoot);
     const members = group.ids.map(id => frames.get(id));
-    const left = Math.min(...members.map(frame => frame.x)) - 24;
-    const top = Math.min(...members.map(frame => frame.y)) - 91;
-    const right = Math.max(...members.map(frame => frame.x)) + screenWidth + 24;
-    const bottom = Math.max(...members.map(frame => frame.y)) + screenHeight + 12;
+    const left = Math.min(...members.map(frame => frame.x)) - inset;
+    const top = Math.min(...members.map(frame => frame.y)) - 158;
+    const right = Math.max(...members.map(frame => frame.x)) + screenWidth + inset;
+    const bottom = Math.max(...members.map(frame => frame.y)) + screenHeight + inset;
     Object.assign(cluster.style,{left:left+'px',top:top+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   }
   paintConnections = createConnections($('connections'),frames,pitch,model.review.annotations);
@@ -1405,8 +1498,9 @@ function overviewCamera() {
 function showOverview(animate = false) {
   if (verificationFlow) verificationFlow.fitted = false;
   centeredSize = {width:canvas.clientWidth,height:canvas.clientHeight};
-  const next = overviewCamera();
   fittingOverview = true;
+  canvas.setAttribute('data-overview','');
+  const next = overviewCamera();
   moveCamera(next.offset,next.zoom,animate);
 }
 
@@ -1573,7 +1667,7 @@ function setDevice(preset) {
   screenWidth = preset.width;
   screenHeight = preset.height;
   pitch.x = screenWidth+140;
-  pitch.y = screenHeight+114;
+  pitch.y = screenHeight+164;
   canvas.dataset.device = preset.kind;
   canvas.style.setProperty('--artboard-width',screenWidth+'px');
   canvas.style.setProperty('--artboard-height',screenHeight+'px');
@@ -1637,6 +1731,7 @@ function applyCustomSize(event) {
   $('custom-size').close();
 }
 
+$('route-proposals-open').addEventListener('click',openRouteProposals);
 $('route-picker').addEventListener('change', () => {
   if (layoutEditing) setLayoutEditing(false);
   closeVerificationFlow(false);
@@ -1655,6 +1750,8 @@ $('custom-size').addEventListener('close',()=>$('device-picker').focus({preventS
 $('overview').addEventListener('click',()=>{
   closeRequestEditor();
   closeDescription();
+  if (!$('review').hidden) setReviewOpen(false);
+  closeVerificationFlow(false);
   showOverview(true);
 });
 $('layout-edit').addEventListener('click',()=>setLayoutEditing(false));
@@ -1728,10 +1825,9 @@ $('scenario-close').addEventListener('click',()=>{
 $('flow-fit').addEventListener('click',()=>fitVerificationPath());
 $('flow-close').addEventListener('click',()=>closeVerificationFlow());
 $('request-text').addEventListener('input',event=>{
-  if (!editingRequest) {
-    drafts.set(active,event.target.value);
-    persistRequests();
-  }
+  const key = editingRequest ? 'request/'+editingRequest.id : active;
+  drafts.set(key,event.target.value);
+  persistRequests();
   updateRequestSave();
   clearRequestFeedback();
 });
@@ -1759,7 +1855,6 @@ canvas.addEventListener('pointerdown',event=>{
     }
   }
   if (!event.isPrimary || event.button!==0) return;
-  slide = undefined;
   cancelClick = false;
   const select = event.target.closest('select');
   deferredSelect = select?.showPicker && window===window.top ? select : null;
@@ -1785,6 +1880,7 @@ window.addEventListener('pointermove',event=>{
   if (!drag.panning) {
     if (dx*dx+dy*dy<25) return;
     drag.panning=true;
+    slide = undefined;
     fittingOverview = false;
     if (verificationFlow) verificationFlow.fitted = false;
     cancelClick=true;
@@ -1898,19 +1994,21 @@ canvas.addEventListener('gestureend',event=>{
 createWorld();
 populateRoutePicker();
 const blockedScenario = model.proposals?.length && Wireflow.check(model,ui).scenarios.find(scenario=>!scenario.passed);
-if (blockedScenario) $('route-picker').value = blockedScenario.id;
+const initialRoute = blockedScenario || model.scenarios[0];
+if (initialRoute) $('route-picker').value = initialRoute.id;
 collectEdges();
 populateDevices();
 setDevice(defaultDevice);
 select(active);
-if (blockedScenario) showOverview();
+showOverview();
 updateRequestCount();
 renderRequirementPanel();
 new ResizeObserver(()=>{
   if (centeredSize.width===canvas.clientWidth && centeredSize.height===canvas.clientHeight) return;
   if (verificationFlow?.fitted) fitVerificationPath();
   else if (layoutEditing || fittingOverview) showOverview();
-  else center(false,true);
+  else if (centeredSize.width!==canvas.clientWidth) center(false,true);
+  else center();
 }).observe(canvas);
 const panelResize = new ResizeObserver(positionInspector);
 panelResize.observe($('request-editor'));

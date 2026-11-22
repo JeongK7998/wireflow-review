@@ -193,7 +193,7 @@
         {
           "id": "clear",
           "label": "Reset search and filters",
-          "to": "browse",
+          "to": null,
           "set": {
             "query": "",
             "area": "All",
@@ -339,7 +339,7 @@
         {
           "id": "retry",
           "label": "Retry payment",
-          "to": "confirm"
+          "to": null
         },
         {
           "id": "back",
@@ -485,7 +485,7 @@
         {
           "id": "close",
           "label": "Keep booking",
-          "to": "booking",
+          "to": null,
           "kind": "close"
         }
       ],
@@ -772,7 +772,59 @@
       ]
     }
   ],
-  "proposals": [],
+  "proposals": [
+    {
+      "id": "resume-payment",
+      "title": "Retry with the same booking",
+      "reason": "Return to payment confirmation with the selected class, time, guests and contact details.",
+      "changes": [
+        {
+          "screen": "payment-error",
+          "action": {
+            "id": "retry",
+            "label": "Retry payment",
+            "to": "confirm"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reset-search",
+      "title": "Clear filters and return to classes",
+      "reason": "Clear the search and filters and show the available classes again.",
+      "changes": [
+        {
+          "screen": "search-empty",
+          "action": {
+            "id": "clear",
+            "label": "Reset search and filters",
+            "to": "browse",
+            "set": {
+              "query": "",
+              "area": "All",
+              "category": "All"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-booking",
+      "title": "Close and keep the booking",
+      "reason": "Closing the cancellation dialog should return to the booking details with the reservation intact.",
+      "changes": [
+        {
+          "screen": "cancel",
+          "action": {
+            "id": "close",
+            "label": "Keep booking",
+            "to": "booking",
+            "kind": "close"
+          }
+        }
+      ]
+    }
+  ],
   "decisions": [
     {
       "screen": "cancel",
@@ -1480,67 +1532,67 @@
     "positions": {
       "welcome": {
         "x": 0,
-        "y": 0.0
+        "y": 0
       },
       "setup": {
         "x": 1,
-        "y": 0.0
+        "y": 0
       },
       "browse": {
-        "x": 2.22,
-        "y": 0.0
+        "x": 2.35,
+        "y": 0
       },
       "filters": {
-        "x": 3.22,
-        "y": 0.0
+        "x": 3.35,
+        "y": 0
       },
       "search-empty": {
-        "x": 4.22,
-        "y": 0.0
+        "x": 4.35,
+        "y": 0
       },
       "class": {
-        "x": 5.22,
-        "y": 0.0
-      },
-      "schedule": {
-        "x": 0,
-        "y": 1.3
-      },
-      "checkout": {
-        "x": 1,
-        "y": 1.3
-      },
-      "confirm": {
-        "x": 2,
-        "y": 1.3
-      },
-      "payment-error": {
-        "x": 1,
-        "y": 2.48
+        "x": 5.35,
+        "y": 0
       },
       "success": {
-        "x": 2,
-        "y": 2.48
+        "x": 0,
+        "y": 1.56
+      },
+      "payment-error": {
+        "x": 1.3,
+        "y": 1.56
+      },
+      "confirm": {
+        "x": 2.65,
+        "y": 1.56
+      },
+      "checkout": {
+        "x": 4,
+        "y": 1.56
+      },
+      "schedule": {
+        "x": 5.35,
+        "y": 1.56
       },
       "bookings": {
-        "x": 3.26,
-        "y": 1.3
+        "x": 0,
+        "y": 3.12
       },
       "booking": {
-        "x": 3.26,
-        "y": 2.48
+        "x": 1.3,
+        "y": 3.12
       },
       "cancel": {
-        "x": 4.68,
-        "y": 2.48
+        "x": 2.65,
+        "y": 3.12
       },
       "cancelled": {
-        "x": 4.62,
-        "y": 1.15
+        "x": 4,
+        "y": 3.12
       },
       "settings": {
-        "x": 5.6,
-        "y": 2.48
+        "x": 5.35,
+        "y": 3.12
       }
     }
   },

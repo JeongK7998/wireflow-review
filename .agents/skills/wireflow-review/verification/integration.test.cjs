@@ -35,11 +35,21 @@ async function verify(cwd, name, flow, size, traceDir) {
   return {status, details, output, report:JSON.parse(await fs.readFile(reportPath, 'utf8'))};
 }
 
+async function canvasOptions(page) {
+  const more = page.locator('#canvas-more');
+  if (!await more.evaluate(el=>el.open)) await more.locator('summary').click();
+}
+
+async function openScreen(page,id) {
+  await page.locator('.artboard[data-screen="'+id+'"] .overview-hit').click();
+  await page.waitForFunction(()=>!document.querySelector('#canvas').hasAttribute('data-overview'));
+}
+
 async function openReview(browser, output, viewport = {width:1024,height:768}) {
   const page = await browser.newPage({viewport, reducedMotion:'reduce',locale:'en-US'});
   await page.goto(pathToFileURL(output).href);
   const canvas = await page.locator('#canvas').boundingBox();
-  const trigger = page.getByRole('button',{name:'Flow 검증',exact:true});
+  const trigger = page.getByRole('button',{name:'흐름 검증',exact:true});
   const triggerBox = await trigger.boundingBox();
   const buttonStyle = () => trigger.evaluate(node=>{
     const {backgroundColor,borderTopColor,color,fontSize,fontWeight,lineHeight} = getComputedStyle(node);
@@ -201,6 +211,12 @@ test('English flow localizes controls, verification evidence and generated diagn
   };
   await fs.writeFile(input,JSON.stringify(flow));
   await fs.writeFile(planPath,JSON.stringify(plan));
+  await assert.rejects(run(process.execPath,[cli,'check',input]), error=>{
+    assert.equal(error.code,1);
+    assert.ok(JSON.parse(error.stdout).findings.length);
+    assert.doesNotMatch(error.stdout,/\p{Script=Hangul}/u);
+    return true;
+  });
   await assert.rejects(run(process.execPath,[cli,'verify',input,planPath,'--output',output],{cwd:root}),{code:1});
   const browser = await chromium.launch();
   t.after(()=>browser.close());
@@ -291,8 +307,10 @@ test('embedded map hotspots work beside details and above them on a narrow frame
   const page=await browser.newPage({viewport:{width:1400,height:1000},reducedMotion:'reduce'});
   for (const size of ['desktop','mobile']) {
     await page.goto(pathToFileURL(output).href);
+    await canvasOptions(page);
     await page.locator('#device-picker').selectOption(size);
     await page.locator('#center').click();
+    await page.waitForFunction(()=>!document.querySelector('#canvas').hasAttribute('data-overview'));
     const device=page.locator('.artboard.is-active .device');
     const image=device.locator('.wireflow-diagram');
     await image.evaluate(img=>img.decode());
@@ -327,15 +345,20 @@ test('overview choices work with legacy flows without scenarios and leave broken
     nodes.map(n=>[n.offsetLeft,n.offsetTop,n.offsetWidth,n.offsetHeight]));
   const original = await structure();
   const picker = page.getByRole('combobox',{name:'Show a path'});
+  await canvasOptions(page);
   await picker.selectOption('map/enter');
   const enter = page.locator('[data-screen="map"] button[data-action="enter"]');
   assert.equal(await enter.getAttribute('data-route-control'),'1');
   assert.deepEqual(await structure(),original);
+  await openScreen(page,'map');
   await enter.click();
   assert.equal(await page.locator('.artboard.is-active').getAttribute('data-screen'),'room');
+  await canvasOptions(page);
   await picker.selectOption('room/reopen');
+  await openScreen(page,'room');
   assert.equal(await page.locator('[data-action="reopen"][data-route-failed]').count(),1);
   assert.equal(await page.locator('#route-stop').isVisible(),true);
+  await canvasOptions(page);
   await picker.selectOption('');
   assert.equal(await page.locator('[data-route-control]').count(),0);
   assert.equal(await page.locator('#route-stop').isVisible(),false);
@@ -354,9 +377,12 @@ test('a missing retry stays blocked until the viewer applies a proposal without 
       {id:'failure',title:'Failed',origin:'source',stage:1,actions:[]},
       {id:'done',title:'Done',origin:'source',stage:1,terminal:true,body:'Received {{note}}',actions:[]}
     ],
-    scenarios:[{id:'recover',title:'Recover',steps:[{action:'fail',screen:'failure'},{action:'retry',screen:'form'},{action:'submit',screen:'done'}]}],
+    scenarios:[{id:'recover',title:'Recover',steps:[{action:'fail',screen:'failure'},{action:'retry',screen:'form'},{action:'submit',screen:'done'}]},
+      {id:'cancel',title:'Cancel',steps:[{action:'fail',screen:'failure'},{action:'cancel',screen:'form'}]}],
     proposals:[{id:'recover-input',title:'Return to the form',reason:'Keep the entered note',
-      changes:[{screen:'failure',action:{id:'retry',label:'Retry',to:'form'}}]}]
+      changes:[{screen:'failure',action:{id:'retry',label:'Retry',to:'form'}}]},
+      {id:'edit-submit',title:'Rename submit',reason:'Clarify submission',
+        changes:[{screen:'form',action:{id:'submit',label:'Send',to:'done'}}]}]
   };
   await fs.writeFile(input,JSON.stringify(flow));
   await run(process.execPath,[cli,'build',input,output]);
@@ -365,15 +391,37 @@ test('a missing retry stays blocked until the viewer applies a proposal without 
   const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
   await page.goto(pathToFileURL(output).href);
   assert.equal(await page.locator('#route-picker').inputValue(),'recover');
+  assert.equal(await page.locator('#route-stop').isVisible(),false);
+  await openScreen(page,'failure');
   assert.equal(await page.locator('#route-stop').isVisible(),true);
-  await page.locator('#center').click();
+  const preview = page.getByRole('button',{name:'View proposed fixes'});
+  const picker = page.locator('#route-picker');
+  await canvasOptions(page);
+  await picker.selectOption('cancel');
+  await openScreen(page,'failure');
+  assert.equal(await page.locator('#route-stop').isVisible(),true);
+  assert.equal(await preview.isVisible(),false);
+  await canvasOptions(page);
+  await picker.selectOption('');
+  assert.equal(await preview.isVisible(),false);
+  await picker.selectOption('recover');
+  await openScreen(page,'form');
   const device = page.locator('.artboard.is-active .device');
   await device.locator('[data-control="note"]').fill('broken handle');
   await device.locator('[data-action="fail"]').click();
   assert.equal(await device.locator('[data-action="retry"]').count(),0);
-  await page.locator('#review-open').click();
-  await page.locator('#review-proposals [data-proposal="recover-input"]').click();
-  await page.locator('#review-open').click();
+  await preview.click();
+  const dialog = page.getByRole('dialog',{name:/Proposed fixes/});
+  assert.match(await dialog.innerText(),/Keep the entered note/);
+  assert.equal(await dialog.locator('[data-proposal]').count(),1);
+  assert.equal(await device.locator('[data-action="retry"]').count(),0);
+  await page.keyboard.press('Escape');
+  assert.equal(await preview.evaluate(node=>node===document.activeElement),true);
+  assert.equal(await page.locator('#route-stop').isVisible(),true);
+  await preview.click();
+  await dialog.getByRole('button',{name:'Apply fix · Return to the form'}).click();
+  assert.equal(await dialog.isVisible(),false);
+  assert.equal(await preview.isVisible(),false);
   assert.equal(await page.locator('#route-stop').isVisible(),false);
   await device.locator('[data-action="retry"]').click();
   assert.equal(await device.locator('[data-control="note"]').inputValue(),'broken handle');
@@ -381,6 +429,116 @@ test('a missing retry stays blocked until the viewer applies a proposal without 
   assert.match(await device.innerText(),/Received broken handle/);
   await page.locator('#review-open').click();
   await page.getByRole('button',{name:'Undo proposed fixes'}).click();
+  await page.locator('#overview').click();
+  await openScreen(page,'failure');
   assert.equal(await page.locator('#route-stop').isVisible(),true);
   assert.equal(await page.locator('[data-screen="failure"] [data-action="retry"]').count(),0);
+});
+
+test('group outlines use the same side and bottom inset in overview and focus', async t=>{
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-group-inset-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const output = path.join(directory,'library.html');
+  await run(process.execPath,[cli,'build',sample+'.flow.json',output]);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  for (const width of [390,1280]) {
+    const page = await browser.newPage({viewport:{width,height:844},reducedMotion:'reduce'});
+    await page.goto(pathToFileURL(output).href);
+    for (const preset of ['mobile','tablet-landscape','watch']) {
+      await canvasOptions(page);
+      await page.locator('#device-picker').selectOption(preset);
+      await page.locator('#overview').click();
+      for (const overview of [true,false]) {
+        if (!overview) await page.locator('.artboard.is-active .overview-hit').click();
+        await page.waitForFunction(value=>document.querySelector('#canvas').hasAttribute('data-overview')===value,overview);
+        if (!overview) {
+          await page.waitForFunction(()=>!slide && cameraFrame===undefined);
+          const board = await page.locator('.artboard.is-active .device').boundingBox();
+          const canvas = await page.locator('#canvas').boundingBox();
+          assert.ok(board.width<=canvas.width*.70+1 && board.height<=canvas.height*.70+1);
+          for (const [pos,length] of [['x','width'],['y','height']]) {
+            const leading = board[pos]-canvas[pos];
+            const trailing = canvas[length]-board[length]-leading;
+            assert.ok(Math.abs(leading-trailing)<=1,'Focused screen must be centered on both axes');
+          }
+        }
+        const groups = await page.evaluate(()=>layout.groups.map(group=>{
+          const outline = [...document.querySelectorAll('.stage-cluster')].find(el=>el.dataset.groupRoot===group.root);
+          const devices = group.ids.map(id=>artboards.get(id).querySelector('.device'));
+          const bounds = outline.getBoundingClientRect();
+          const boxes = devices.map(device=>device.getBoundingClientRect());
+          const scale = boxes[0].width/devices[0].offsetWidth;
+          return {
+            margins:[Math.min(...boxes.map(b=>b.left))-bounds.left, bounds.right-Math.max(...boxes.map(b=>b.right)),
+              bounds.bottom-Math.max(...boxes.map(b=>b.bottom))].map(length=>length/scale),
+            radius:parseFloat(getComputedStyle(outline).borderBottomLeftRadius),
+            screenRadius:parseFloat(getComputedStyle(devices[0]).borderBottomLeftRadius),
+          };
+        }));
+        assert.ok(groups.length>1);
+        for (const {margins,radius,screenRadius} of groups) {
+          assert.ok(margins.every(value=>Math.abs(value-24)<.02),JSON.stringify(margins));
+          assert.equal(radius,screenRadius+24);
+        }
+      }
+    }
+    await page.close();
+  }
+});
+
+test('following an action slides the new screen to the center of the canvas', async t=>{
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-center-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const output = path.join(directory,'rental.html');
+  await run(process.execPath,[cli,'build',sample+'.flow.json',output]);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({viewport:{width:1280,height:850},reducedMotion:'no-preference'});
+  await page.goto(pathToFileURL(output).href);
+  await openScreen(page,'tools');
+  await page.waitForFunction(()=>!slide && cameraFrame===undefined);
+  for (const [action,target] of [['open-drill','drill'],['choose-date','rental-date']]) {
+    await page.locator('.artboard.is-active [data-action="'+action+'"]').first().click();
+    await page.waitForFunction(id=>active===id && slide?.elapsed>0 && slide.elapsed<slide.duration,target);
+    await page.waitForFunction(()=>!slide && cameraFrame===undefined);
+    const frame = await page.locator('.artboard.is-active').boundingBox();
+    const canvas = await page.locator('#canvas').boundingBox();
+    assert.ok(Math.abs(frame.x+frame.width/2-canvas.x-canvas.width/2)<1);
+    assert.ok(Math.abs(frame.y+frame.height/2-canvas.y-canvas.height/2)<1);
+  }
+});
+
+test('switching review panels retains the inspected screen and request draft', async t=>{
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-panels-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const output = path.join(directory,'rental.html');
+  await run(process.execPath,[cli,'build',sample+'.flow.json',output]);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  await page.goto(pathToFileURL(output).href);
+  await openScreen(page,'tools');
+  const panels = page.locator('#review:visible, #request-editor:visible, #screen-description:visible, #request-list[open]');
+  async function switchTo(button,panel) {
+    await page.locator('#'+button).click();
+    assert.deepEqual(await panels.evaluateAll(nodes=>nodes.map(n=>n.id)),[panel]);
+  }
+  await switchTo('request-open','request-editor');
+  await page.locator('#request-text').fill('Check the tool details.');
+  await switchTo('review-open','review');
+  await switchTo('description-open','screen-description');
+  await switchTo('request-open','request-editor');
+  assert.equal(await page.locator('#request-text').inputValue(),'Check the tool details.');
+  await switchTo('review-open','review');
+  await page.locator('#review-scope > summary').click();
+  await page.locator('#scenario-results > summary').click();
+  await page.locator('[data-route="reserve-friday"] button').first().click();
+  await page.locator('#flow-steps button').nth(2).click();
+  await page.locator('.artboard[data-screen="rental-date"].is-active').waitFor();
+  await switchTo('request-open','request-editor');
+  assert.equal(await page.locator('#verification-flow').isVisible(),false);
+  assert.match(await page.locator('#request-title').innerText(),/02\.01/);
+  assert.equal(await page.locator('#request-text').inputValue(),'');
+  await switchTo('requests-open','request-list');
 });
