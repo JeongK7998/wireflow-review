@@ -4,6 +4,13 @@
 
 ## English
 
+### Where changes take effect
+
+| Status in Wireflow | What it means |
+| --- | --- |
+| **Applied in Wireflow** | The AI updated the flow file and its clickable mockup. For example, the booking button may show a new label in the preview. |
+| **Sent to development** | You sent the implementation request to the app's development chat and marked it as sent in Wireflow. The button in the real app gets the new label when the development AI edits the app code. |
+
 ### 1. Open a preview
 
 Open your app project in your AI coding tool and send this request. Your notes, existing screens, or routes can serve as the starting point.
@@ -31,9 +38,18 @@ To explore the controls without setting up a project, download and open the demo
 
 Open **AI change requests**. Each applied item shows what you asked for, what changed in the mockup, and whether the development request has been sent. Recheck the flow and select the changes you want implemented.
 
-Choose **Request development changes in bulk**, then paste and send the copied request in the chat for your actual app project. After sending it, choose **Mark sent to development** in Wireflow to update the list.
+1. Choose **Request development changes in bulk** to copy an implementation request for the selected changes.
+2. Paste and send it in the chat that has your app project open. The development AI uses that request to edit your app code.
+3. After sending the request, choose **Mark sent to development** in Wireflow. When implementation is complete, run the actual app and verify the affected flow there.
 
 ## 한국어
+
+### 어디에 반영되는지 확인하기
+
+| Wireflow에 표시되는 상태 | 의미 |
+| --- | --- |
+| **와이어플로우 반영 완료** | AI가 흐름 파일과 클릭 가능한 미리보기를 바꿨어요. 예를 들어, 예약 버튼의 새 이름을 더미 화면에서 확인할 수 있어요. |
+| **개발 요청 전달 완료** | 실제 앱 프로젝트의 채팅에 구현 요청을 보내고 Wireflow에서 전달을 표시했어요. 실제 앱의 버튼 이름은 개발 AI가 앱 코드를 수정할 때 바뀝니다. |
 
 ### 1. 내 프로젝트에서 미리보기 열기
 
@@ -62,4 +78,6 @@ node .agents/skills/wireflow-review/scripts/wireflow.cjs serve design/project.fl
 
 **수정 요청 목록**에는 요청 원문, 더미에서 바뀐 내용, 개발 요청 전달 상태가 함께 표시돼요. 바뀐 흐름을 눌러 보고 앱에 적용할 항목을 고르세요.
 
-하단 **일괄 개발 반영 요청**을 누르면 선택한 항목이 하나의 요청으로 복사돼요. 실제 앱 프로젝트의 채팅에 붙여넣어 전송한 뒤, Wireflow에서 **개발 채팅에 전달했어요**를 누르면 목록에 전달 완료가 표시됩니다.
+1. 하단 **일괄 개발 반영 요청**을 눌러 선택한 변경의 구현 요청문을 복사하세요.
+2. 실제 앱 프로젝트를 열어 둔 채팅에 붙여넣고 전송하세요. 개발 AI가 그 요청을 바탕으로 앱 코드를 수정합니다.
+3. 전송했으면 Wireflow에서 **개발 채팅에 전달했어요**를 누르세요. 구현이 끝나면 실제 앱을 열어 바뀐 흐름을 확인하세요.
