@@ -18,7 +18,7 @@ https://github.com/JeongK7998/wireflow-review
 Apply this skill to my project.
 ```
 
-3. Open the preview your AI creates and follow one highlighted path. Try a change, review it in the mockup, then use **Request development changes in bulk** to prepare the implementation request.
+3. Open the preview your AI creates and follow one highlighted path. Try a change, review it in the mockup, then use **Copy development request prompt** and paste the result into your app development chat.
 
 If you have the distribution kit, attach it to the project chat and send the same request.
 
@@ -36,4 +36,4 @@ If you have the distribution kit, attach it to the project chat and send the sam
 
 To try it first, open the included demo in a browser. [Open the English demo](example/pottery-booking.en.html)
 
-[Download the skill ZIP](wireflow-review-v0.7.0.zip)
+[Download the skill ZIP](wireflow-review-v0.7.1.zip)

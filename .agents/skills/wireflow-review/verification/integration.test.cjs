@@ -714,7 +714,11 @@ test('screen requests update the connected preview and development delivery is a
   await page.locator('.artboard.is-active [data-action="open-drill"]').filter({hasText:'See drill details'}).first()
     .waitFor({timeout:12_000});
   await list.getByText('Renamed the selected action').waitFor();
-  await list.getByRole('button',{name:'Request development changes in bulk (2)'}).click();
+  const copy = list.getByRole('button',{name:'Copy development request prompt (2)'});
+  assert.match(await copy.getAttribute('aria-describedby'),/development-copy-hint/);
+  assert.equal(await list.getByText('Paste the copied prompt into your app development chat and send it there.').isVisible(),true);
+  await copy.click();
+  assert.match(await page.locator('#copy-status').innerText(),/Copied a prompt for 2 changes/);
   const developmentCopy = await page.evaluate(()=>window.copiedRequest);
   assert.match(developmentCopy,/Rename the drill action/);
   assert.match(developmentCopy,/Add tool details from chat/);

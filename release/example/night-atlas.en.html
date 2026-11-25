@@ -2,7 +2,7 @@
 <html lang="ko" data-build="ready">
 <head>
   <meta charset="utf-8">
-  <meta name="wireflow-revision" content="6948b5a7356fc0a479029b49dfec5440070a94b0e7e3f622a34cce09d2eb0f91">
+  <meta name="wireflow-revision" content="cdf2ef8b9d82a32344bb60ff9de0cc6b0a95d52b569e7d6c4c4ff4ab4b53b96f">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>XU Wireflow Review</title>
   <style>/* Bundled fonts
@@ -1392,8 +1392,8 @@ dialog h3 { font-size: .95rem; }
 
 #request-update-status:empty, #request-mode-hint:empty { display: none; }
 #request-update-status { color: #206039; font-size: .78rem; font-weight: 700; }
-#request-mode-hint, .pending-request-tools { color: var(--muted); font-size: .76rem; }
-.pending-request-tools { margin-block: 0 10px; }
+#request-mode-hint, .pending-request-tools, #development-copy-hint { color: var(--muted); font-size: .76rem; }
+.pending-request-tools, #development-copy-hint { margin-block: 0 10px; }
 .saved-request-title .request-delivery { color: var(--muted); font-size: .72rem; }
 .saved-request-text.request-error { color: var(--warning); }
 </style>
@@ -1438,7 +1438,7 @@ dialog h3 { font-size: .95rem; }
           <span data-en="AI change requests">수정 요청 목록</span> <span id="request-count" aria-hidden="true">0</span>
         </button>
         <aside id="requests-help" class="requests-help" aria-label="수정 요청 목록 안내" data-en-aria-label="Change requests guide" hidden>
-          <p role="status" data-en="Open this list to send changes applied in Wireflow to your app project in one request.">여기에서 와이어플로우에 반영된 변경을 모아 실제 개발에 적용해 달라고 요청할 수 있어요.</p>
+          <p role="status" data-en="Open this list to copy applied changes as a prompt for your app development chat.">여기에서 와이어플로우에 반영된 변경을 개발 채팅에 보낼 프롬프트로 복사할 수 있어요.</p>
           <button id="requests-help-close" type="button" class="tool quiet" data-en="Got it">확인</button>
         </aside>
       </div>
@@ -1609,8 +1609,9 @@ dialog h3 { font-size: .95rem; }
     <p id="pending-request-tools" class="pending-request-tools" hidden>
       <button id="copy-requests" type="button" class="tool quiet" disabled data-en="Copy waiting requests to chat">대기 요청 채팅으로 복사</button>
     </p>
+    <p id="development-copy-hint" hidden data-en="Paste the copied prompt into your app development chat and send it there.">복사한 프롬프트를 앱 개발 채팅에 붙여넣고 전송하세요.</p>
     <div class="request-copy-actions">
-      <button id="copy-development" type="button" class="tool primary" disabled data-en="Request development changes in bulk">일괄 개발 반영 요청</button>
+      <button id="copy-development" type="button" class="tool primary" disabled aria-describedby="development-copy-hint" data-en="Copy development request prompt">개발 요청 프롬프트 복사</button>
       <button id="confirm-development" type="button" class="tool" hidden data-en="Mark sent to development">개발 채팅에 전달했어요</button>
     </div>
     <p id="copy-status" role="status"></p>
@@ -5223,10 +5224,11 @@ function updateCopyButton() {
   const selected = selectedRequests();
   const pending = selected.filter(request=>!request.applied).length;
   const applied = selected.length-pending;
+  $('development-copy-hint').hidden = Boolean(testRun || !applied);
   $('pending-request-tools').hidden = Boolean(previewToken && !testRun) || !pending;
   const controls = [
     ['copy-requests',pending,ui('대기 요청 채팅으로 복사','Copy waiting requests to chat')],
-    ['copy-development',testRun ? 0 : applied,ui('일괄 개발 반영 요청','Request development changes in bulk')],
+    ['copy-development',testRun ? 0 : applied,ui('개발 요청 프롬프트 복사','Copy development request prompt')],
   ];
   for (const [id,count,label] of controls) {
     $(id).disabled = !count;
@@ -5350,7 +5352,7 @@ async function copyRequestBatch(development = false) {
   try {
     await navigator.clipboard.writeText(copy);
     if ($('request-list').open) $('copy-status').textContent = development ?
-      ui(`개발 요청 ${selected.length}건을 복사했어요. 앱 개발 채팅에 붙여넣고 전송하세요.`,`Copied ${selected.length} requests. Paste and send them in your app development chat.`) :
+      ui(`변경 ${selected.length}건의 개발 요청 프롬프트를 복사했어요. 앱 개발 채팅에 붙여넣고 전송하세요.`,`Copied a prompt for ${selected.length} changes. Paste and send it in your app development chat.`) :
       ui(`요청 ${selected.length}건을 복사했어요. 와이어플로우 채팅에 붙여넣으세요.`,`Copied ${selected.length} requests. Paste them into your Wireflow chat.`);
   } catch {
     if (!$('request-list').open) return;
@@ -5360,7 +5362,7 @@ async function copyRequestBatch(development = false) {
     field.focus();
     field.select();
     $('copy-status').textContent = development ?
-      ui('선택된 내용을 복사해 앱 개발 채팅에 붙여넣으세요.','Copy the selected text into your app development chat.') :
+      ui('선택된 프롬프트를 복사해 앱 개발 채팅에 붙여넣고 전송하세요.','Copy the selected prompt, then paste and send it in your app development chat.') :
       ui('선택된 내용을 복사해 와이어플로우 채팅에 붙여넣으세요.','Copy the selected text into your Wireflow chat.');
   }
   if (development && $('request-list').open) {

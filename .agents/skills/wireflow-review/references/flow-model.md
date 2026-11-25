@@ -95,7 +95,7 @@ Save each applied chat or viewer request in `review.changeRequests`. The list in
 }
 ```
 
-The required fields are `id`, `screen`, `text` and `applied`. Use `action` when the change targets a control. Include `number` and `title` for a screen that was removed. Describe the implemented interaction, destination and state changes in `applied`. Keep unresolved requests pending. The viewer adds selected built-in fixes to the same list and includes them in the reviewed JSON download. **Request development changes in bulk** copies selected applied entries for the app development chat. The user marks a batch as sent after delivering it. Issue checks retain their own resolution status.
+The required fields are `id`, `screen`, `text` and `applied`. Use `action` when the change targets a control. Include `number` and `title` for a screen that was removed. Describe the implemented interaction, destination and state changes in `applied`. Keep unresolved requests pending. The viewer adds selected built-in fixes to the same list and includes them in the reviewed JSON download. **Copy development request prompt** copies selected applied entries for the app development chat. The user marks a batch as sent after delivering it. Issue checks retain their own resolution status.
 
 The build generates a companion file named `VIEWER.html.live.css` beside the standalone HTML. Keep both at the same path for automatic preview refresh after a rebuild. The HTML can still be opened by itself for review.
 

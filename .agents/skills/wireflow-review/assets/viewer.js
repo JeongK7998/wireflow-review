@@ -1433,10 +1433,11 @@ function updateCopyButton() {
   const selected = selectedRequests();
   const pending = selected.filter(request=>!request.applied).length;
   const applied = selected.length-pending;
+  $('development-copy-hint').hidden = Boolean(testRun || !applied);
   $('pending-request-tools').hidden = Boolean(previewToken && !testRun) || !pending;
   const controls = [
     ['copy-requests',pending,ui('대기 요청 채팅으로 복사','Copy waiting requests to chat')],
-    ['copy-development',testRun ? 0 : applied,ui('일괄 개발 반영 요청','Request development changes in bulk')],
+    ['copy-development',testRun ? 0 : applied,ui('개발 요청 프롬프트 복사','Copy development request prompt')],
   ];
   for (const [id,count,label] of controls) {
     $(id).disabled = !count;
@@ -1560,7 +1561,7 @@ async function copyRequestBatch(development = false) {
   try {
     await navigator.clipboard.writeText(copy);
     if ($('request-list').open) $('copy-status').textContent = development ?
-      ui(`개발 요청 ${selected.length}건을 복사했어요. 앱 개발 채팅에 붙여넣고 전송하세요.`,`Copied ${selected.length} requests. Paste and send them in your app development chat.`) :
+      ui(`변경 ${selected.length}건의 개발 요청 프롬프트를 복사했어요. 앱 개발 채팅에 붙여넣고 전송하세요.`,`Copied a prompt for ${selected.length} changes. Paste and send it in your app development chat.`) :
       ui(`요청 ${selected.length}건을 복사했어요. 와이어플로우 채팅에 붙여넣으세요.`,`Copied ${selected.length} requests. Paste them into your Wireflow chat.`);
   } catch {
     if (!$('request-list').open) return;
@@ -1570,7 +1571,7 @@ async function copyRequestBatch(development = false) {
     field.focus();
     field.select();
     $('copy-status').textContent = development ?
-      ui('선택된 내용을 복사해 앱 개발 채팅에 붙여넣으세요.','Copy the selected text into your app development chat.') :
+      ui('선택된 프롬프트를 복사해 앱 개발 채팅에 붙여넣고 전송하세요.','Copy the selected prompt, then paste and send it in your app development chat.') :
       ui('선택된 내용을 복사해 와이어플로우 채팅에 붙여넣으세요.','Copy the selected text into your Wireflow chat.');
   }
   if (development && $('request-list').open) {

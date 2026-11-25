@@ -17,7 +17,7 @@ Open your app project in your AI coding tool and send this request. Your notes, 
 
 ```text
 https://github.com/JeongK7998/wireflow-review
-Apply Wireflow Review v0.7.0 to this project and open a connected preview if Codex CLI is available.
+Apply Wireflow Review v0.7.1 to this project and open a connected preview if Codex CLI is available.
 ```
 
 A **connected preview** needs Node.js 18+ and a signed-in Codex CLI. The AI can run the command below from your project root. Use your actual flow and HTML paths, keep the command running, and open the local URL it prints. [AI setup guide](APPLY.md)
@@ -38,7 +38,7 @@ To explore the controls without setting up a project, download and open the demo
 
 Open **AI change requests**. Each applied item shows what you asked for, what changed in the mockup, and whether the development request has been sent. Recheck the flow and select the changes you want implemented.
 
-1. Choose **Request development changes in bulk** to copy an implementation request for the selected changes.
+1. Select the changes to implement and choose **Copy development request prompt**.
 2. Paste and send it in the chat that has your app project open. The development AI uses that request to edit your app code.
 3. After sending the request, choose **Mark sent to development** in Wireflow. When implementation is complete, run the actual app and verify the affected flow there.
 
@@ -57,7 +57,7 @@ AI 코딩 도구에서 앱 프로젝트를 열고 아래 두 줄을 보내세요
 
 ```text
 https://github.com/JeongK7998/wireflow-review
-이 프로젝트에 Wireflow Review v0.7.0을 적용해줘. Codex CLI를 쓸 수 있으면 연결 미리보기로 열어줘.
+이 프로젝트에 Wireflow Review v0.7.1을 적용해줘. Codex CLI를 쓸 수 있으면 연결 미리보기로 열어줘.
 ```
 
 **연결 미리보기**에는 Node.js 18 이상과 로그인된 Codex CLI가 필요해요. AI가 프로젝트 루트에서 아래 명령을 실행할 수 있습니다. 실제 흐름 JSON과 HTML 경로를 넣고, 명령을 실행한 상태에서 출력된 로컬 주소를 여세요. [AI용 설치 안내](APPLY.md#한국어)
@@ -78,6 +78,6 @@ node .agents/skills/wireflow-review/scripts/wireflow.cjs serve design/project.fl
 
 **수정 요청 목록**에는 요청 원문, 더미에서 바뀐 내용, 개발 요청 전달 상태가 함께 표시돼요. 바뀐 흐름을 눌러 보고 앱에 적용할 항목을 고르세요.
 
-1. 하단 **일괄 개발 반영 요청**을 눌러 선택한 변경의 구현 요청문을 복사하세요.
+1. 앱에 적용할 항목을 고른 뒤 하단의 **개발 요청 프롬프트 복사**를 누르세요.
 2. 실제 앱 프로젝트를 열어 둔 채팅에 붙여넣고 전송하세요. 개발 AI가 그 요청을 바탕으로 앱 코드를 수정합니다.
 3. 전송했으면 Wireflow에서 **개발 채팅에 전달했어요**를 누르세요. 구현이 끝나면 실제 앱을 열어 바뀐 흐름을 확인하세요.

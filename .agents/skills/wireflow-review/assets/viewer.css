@@ -594,7 +594,7 @@ dialog h3 { font-size: .95rem; }
 
 #request-update-status:empty, #request-mode-hint:empty { display: none; }
 #request-update-status { color: #206039; font-size: .78rem; font-weight: 700; }
-#request-mode-hint, .pending-request-tools { color: var(--muted); font-size: .76rem; }
-.pending-request-tools { margin-block: 0 10px; }
+#request-mode-hint, .pending-request-tools, #development-copy-hint { color: var(--muted); font-size: .76rem; }
+.pending-request-tools, #development-copy-hint { margin-block: 0 10px; }
 .saved-request-title .request-delivery { color: var(--muted); font-size: .72rem; }
 .saved-request-text.request-error { color: var(--warning); }

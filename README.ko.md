@@ -18,7 +18,7 @@ https://github.com/JeongK7998/wireflow-review
 이 스킬을 내 프로젝트에 적용해줘.
 ```
 
-3. AI가 만든 미리보기에서 한 경로를 눌러 보세요. 변경은 더미에서 먼저 확인하고 **일괄 개발 반영 요청**으로 앱에 적용할 내용을 전달하세요.
+3. AI가 만든 미리보기에서 한 경로를 눌러 보세요. 변경은 더미에서 먼저 확인하고 **개발 요청 프롬프트 복사**으로 앱에 적용할 내용을 전달하세요.
 
 [사용 방법](release/HOW_TO_USE.md#한국어) · [AI용 설치 안내](release/APPLY.md#한국어)
 
@@ -34,4 +34,4 @@ https://github.com/JeongK7998/wireflow-review
 
 내 프로젝트에 적용하기 전에 직접 눌러 보려면 예제를 내려받아 브라우저에서 여세요. [한국어 예제 내려받기](release/example/pottery-booking.ko.html?raw=1)
 
-[스킬 ZIP 내려받기](release/wireflow-review-v0.7.0.zip?raw=1)
+[스킬 ZIP 내려받기](release/wireflow-review-v0.7.1.zip?raw=1)

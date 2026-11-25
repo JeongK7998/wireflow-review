@@ -47,7 +47,7 @@
           <span data-en="AI change requests">수정 요청 목록</span> <span id="request-count" aria-hidden="true">0</span>
         </button>
         <aside id="requests-help" class="requests-help" aria-label="수정 요청 목록 안내" data-en-aria-label="Change requests guide" hidden>
-          <p role="status" data-en="Open this list to send changes applied in Wireflow to your app project in one request.">여기에서 와이어플로우에 반영된 변경을 모아 실제 개발에 적용해 달라고 요청할 수 있어요.</p>
+          <p role="status" data-en="Open this list to copy applied changes as a prompt for your app development chat.">여기에서 와이어플로우에 반영된 변경을 개발 채팅에 보낼 프롬프트로 복사할 수 있어요.</p>
           <button id="requests-help-close" type="button" class="tool quiet" data-en="Got it">확인</button>
         </aside>
       </div>
@@ -218,8 +218,9 @@
     <p id="pending-request-tools" class="pending-request-tools" hidden>
       <button id="copy-requests" type="button" class="tool quiet" disabled data-en="Copy waiting requests to chat">대기 요청 채팅으로 복사</button>
     </p>
+    <p id="development-copy-hint" hidden data-en="Paste the copied prompt into your app development chat and send it there.">복사한 프롬프트를 앱 개발 채팅에 붙여넣고 전송하세요.</p>
     <div class="request-copy-actions">
-      <button id="copy-development" type="button" class="tool primary" disabled data-en="Request development changes in bulk">일괄 개발 반영 요청</button>
+      <button id="copy-development" type="button" class="tool primary" disabled aria-describedby="development-copy-hint" data-en="Copy development request prompt">개발 요청 프롬프트 복사</button>
       <button id="confirm-development" type="button" class="tool" hidden data-en="Mark sent to development">개발 채팅에 전달했어요</button>
     </div>
     <p id="copy-status" role="status"></p>
