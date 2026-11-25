@@ -6,7 +6,7 @@ This AI skill helps anyone planning an app review its **structure and user flow*
 
 - **See the whole app.** Screens are grouped by task. Pick a path to highlight the buttons and numbered arrows that take someone from start to finish.
 - **Try the easy-to-miss steps.** Go back after entering information, cancel halfway through, or retry after an error. Check where you land and what the app remembers.
-- **Give your AI a precise change request.** Copy a request from the screen you’re reviewing. It keeps what your brief requires separate from screens the AI suggests and questions you still need to answer.
+- **Review changes before implementation.** Update the Wireflow from your project chat or from a screen in a connected preview. Send the changes you approve to your app development chat in one batch.
 
 ## Use it in your project
 
@@ -18,11 +18,11 @@ https://github.com/JeongK7998/wireflow-review
 Apply this skill to my project.
 ```
 
-3. Open the generated HTML in your browser and follow a path. If a step is missing, copy a change request from that screen into the same chat.
+3. Open the preview your AI creates and follow one highlighted path. Try a change, review it in the mockup, then use **Request development changes in bulk** to prepare the implementation request.
 
-If you already have the distribution kit, attach it to the chat and send the same request. The kit includes the setup guide and installer.
+If you have the distribution kit, attach it to the project chat and send the same request.
 
-Select a screen to zoom in with its neighbors still visible. Choose **Overview** to return to the map. The **⋯** menu lets you change the highlighted path or device.
+[How to use](HOW_TO_USE.md#english) · [AI setup guide](APPLY.md)
 
 ## A closer look
 
@@ -36,4 +36,4 @@ Select a screen to zoom in with its neighbors still visible. Choose **Overview**
 
 To try it first, open the included demo in a browser. [Open the English demo](example/pottery-booking.en.html)
 
-For AI tools following a repository link, use the project setup guide. [Setup guide](APPLY.md) · [Download the skill ZIP](wireflow-review-v0.5.5.zip)
+[Download the skill ZIP](wireflow-review-v0.7.0.zip)

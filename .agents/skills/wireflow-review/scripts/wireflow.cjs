@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const {randomUUID} = require('node:crypto');
+const {createHash,randomUUID} = require('node:crypto');
 const assets = path.join(__dirname, '..', 'assets');
 const wireflow = require(path.join(assets, 'engine.js'));
 const {resolve:resolveLocale,translator} = require(path.join(assets, 'locale.js'));
@@ -22,6 +22,7 @@ function prepareFlow(input, workspace) {
   const template = readAsset('viewer.html');
   const slots = {
     data: embed(model),
+    revision: '',
     styles: paperStyles()+'\n'+readAsset('viewer.css'),
     connections: readAsset('paper/connections.js'),
     workshop: model.review?.renderer === 'workshop' ? readAsset('workshop.js') : '',
@@ -33,8 +34,11 @@ function prepareFlow(input, workspace) {
     model,
     render(verification) {
       const build = embed({flowPath,verification});
-      return template.replace(/<!-- wireflow:([\w-]+) -->|\/\* wireflow:([\w-]+) \*\//g,
+      const html = template.replace(/<!-- wireflow:([\w-]+) -->|\/\* wireflow:([\w-]+) \*\//g,
         (_, comment, script) => (comment || script) === 'build' ? build : slots[comment || script]);
+      const revision = createHash('sha256').update(html).digest('hex');
+      return {html:html.replace('<meta name="wireflow-revision" content="">',
+        '<meta name="wireflow-revision" content="'+revision+'">'),revision};
     },
   };
 }
@@ -51,10 +55,17 @@ function writeOutput(output,data) {
   }
 }
 
+function writePreview(output,{html,revision}) {
+  writeOutput(output,html);
+  writeOutput(output+'.live.css','#wireflow-live-probe { --wireflow-revision: '+revision+'; }\n');
+}
+
 function buildFlow(input, output, workspace = process.cwd()) {
-  if (path.resolve(input) === path.resolve(output)) throw new Error('The HTML output must be separate from the input JSON');
+  if ([output,output+'.live.css'].some(file=>path.resolve(file)===path.resolve(input))) {
+    throw new Error('The preview output must be separate from the input JSON');
+  }
   const preview = prepareFlow(input,workspace);
-  writeOutput(output,preview.render());
+  writePreview(output,preview.render());
   return preview.model;
 }
 
@@ -99,7 +110,7 @@ async function verifyFlow(args) {
   let browser;
   try {
     const candidate = path.join(directory,'candidate.html');
-    fs.writeFileSync(candidate,preview.render());
+    fs.writeFileSync(candidate,preview.render().html);
     browser = await verifyBrowser(candidate,compiled,{viewport,traceDir});
   } finally {
     fs.rmSync(directory,{recursive:true,force:true});
@@ -114,7 +125,7 @@ async function verifyFlow(args) {
     browser,
   };
   if (reportPath) writeOutput(reportPath,JSON.stringify(report,null,2)+'\n');
-  if (output) writeOutput(output,preview.render(report));
+  if (output) writePreview(output,preview.render(report));
   return report;
 }
 
@@ -127,10 +138,22 @@ async function main(argv) {
     process.stdout.write(JSON.stringify(report,null,2)+'\n');
     return report.model.findings.length || report.browser.findings.length ? 1 : 0;
   }
+  if (command==='serve' && input && argument && extra.length===0) {
+    const port = option===undefined ? 4176 : Number(option);
+    if (!Number.isInteger(port) || port<1 || port>65535) throw new Error('Invalid preview port');
+    const {startPreview} = require('./live-preview.cjs');
+    const preview = startPreview({input,output:argument,port,buildFlow,writeOutput});
+    await new Promise((resolve,reject)=>{
+      preview.server.once('close',resolve);
+      preview.server.once('error',reject);
+      preview.server.once('listening',()=>console.log('Wireflow · http://127.0.0.1:'+port+preview.page));
+    });
+    return 0;
+  }
   const checkArguments = command === 'check' && (!argument && !option || argument === '--with' && option);
   const buildArguments = command === 'build' && argument && !option;
   if (!input || extra.length || !(checkArguments || buildArguments)) {
-    throw new Error('Usage: wireflow.cjs check FLOW.json [--with ID,ID] | build FLOW.json VIEWER.html | '+verifyUsage);
+    throw new Error('Usage: wireflow.cjs check FLOW.json [--with ID,ID] | build FLOW.json VIEWER.html | serve FLOW.json VIEWER.html [PORT] | '+verifyUsage);
   }
   if (command === 'check') {
     const model = readFlow(input);

@@ -404,6 +404,7 @@ test('a missing retry stays blocked until the viewer applies a proposal without 
   await canvasOptions(page);
   await picker.selectOption('');
   assert.equal(await preview.isVisible(),false);
+  await canvasOptions(page);
   await picker.selectOption('recover');
   await openScreen(page,'form');
   const device = page.locator('.artboard.is-active .device');
@@ -541,4 +542,184 @@ test('switching review panels retains the inspected screen and request draft', a
   assert.match(await page.locator('#request-title').innerText(),/02\.01/);
   assert.equal(await page.locator('#request-text').inputValue(),'');
   await switchTo('requests-open','request-list');
+});
+
+test('rebuilding an open viewer merges chat and screen requests for development and restores the draft', async t=>{
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-handoff-'));
+  t.after(()=>fs.rm(cwd,{recursive:true,force:true}));
+  const input = path.join(cwd,'flow.json'), output = path.join(cwd,'flow.html');
+  const flow = JSON.parse(await fs.readFile(sample+'.flow.json','utf8'));
+  flow.review = {...flow.review,locale:'en'};
+  async function build() {
+    await fs.writeFile(input,JSON.stringify(flow));
+    await run(process.execPath,[cli,'build',input,output]);
+  }
+  await build();
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  await page.addInitScript(()=>{
+    Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copiedRequest = text;}}});
+  });
+  await page.goto(pathToFileURL(output).href);
+  await openScreen(page,'tools');
+  const editor = page.locator('#request-text');
+  const list = page.locator('#request-list');
+  const save = page.locator('#request-save');
+  await page.locator('#request-open').click();
+  const text = 'Rename the drill action to See drill details.';
+  await editor.fill(text);
+  await save.click();
+  const help = page.locator('#requests-help');
+  assert.equal(await help.isVisible(),true);
+  const box = await help.boundingBox();
+  assert.ok(box.x>=0 && box.x+box.width<=390);
+  await page.locator('#requests-open').click();
+  assert.equal(await help.isVisible(),false);
+  assert.equal(await page.locator('#copy-development').isDisabled(),true);
+  await page.locator('#copy-requests').click();
+  const draftCopy = await page.evaluate(()=>window.copiedRequest);
+  const id = draftCopy.match(/^Request ID: (.+)$/m)[1];
+  assert.ok(draftCopy.includes(text));
+  await list.getByRole('button',{name:'Close AI change requests'}).click();
+  await page.locator('#request-open').click();
+  await editor.fill('Leave this request waiting.');
+  await save.click();
+  await editor.fill('Keep this unsaved draft.');
+
+  flow.screens.find(item=>item.id==='tools').actions.find(item=>item.id==='open-drill').label = 'See drill details';
+  flow.review.changeRequests = [
+    {id,screen:'tools',action:'open-drill',text,applied:'Changed the drill button label to See drill details.'},
+    {id:'chat-details',screen:'drill',text:'Mention tool availability.',applied:'Added an availability row to the details.'},
+  ];
+  await build();
+  await page.locator('.artboard.is-active [data-action="open-drill"]').filter({hasText:'See drill details'}).first().waitFor({timeout:12_000});
+  assert.equal(await editor.inputValue(),'Keep this unsaved draft.');
+  assert.equal(await editor.isVisible(),true);
+  assert.equal(await help.isVisible(),false);
+  await page.locator('#requests-open').click();
+  assert.equal(await list.locator('li').count(),3);
+  assert.match(await list.innerText(),/Copied|Applied in Wireflow/);
+  await page.locator('#copy-development').click();
+  const developmentCopy = await page.evaluate(()=>window.copiedRequest);
+  assert.match(developmentCopy,/Implement these changes in the actual app code/);
+  assert.match(developmentCopy,/Rename the drill action/);
+  assert.match(developmentCopy,/Added an availability row/);
+  assert.doesNotMatch(developmentCopy,/Leave this request waiting/);
+});
+
+test('the preview font switches immediately and persists without changing the selected screen', async t=>{
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-font-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const output = path.join(directory,'preview.html');
+  await run(process.execPath,[cli,'build',sample+'.flow.json',output]);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  await page.goto(pathToFileURL(output).href);
+  await openScreen(page,'tools');
+  await canvasOptions(page);
+  const picker = page.getByLabel('미리보기 글꼴');
+  for (const width of [320,390,651,1440,390]) {
+    await page.setViewportSize({width,height:844});
+    const geometry = await picker.evaluate(node=>{
+      const panel = node.closest('.canvas-more-panel');
+      const {left,right} = panel.getBoundingClientRect();
+      const {font,paddingLeft,paddingRight} = getComputedStyle(node);
+      const context = document.createElement('canvas').getContext('2d');
+      context.font = font;
+      const longest = Math.max(...Array.from(node.options,option=>context.measureText(option.text).width));
+      return {left,right,scrollWidth:panel.scrollWidth,clientWidth:panel.clientWidth,
+        textSpace:node.clientWidth-parseFloat(paddingLeft)-parseFloat(paddingRight)-16,longest};
+    });
+    assert.ok(geometry.left>=0 && geometry.right<=width,JSON.stringify({width,...geometry}));
+    assert.equal(geometry.scrollWidth,geometry.clientWidth);
+    assert.ok(geometry.textSpace>=geometry.longest,JSON.stringify({width,...geometry}));
+  }
+  const action = page.locator('.artboard.is-active [data-action="open-drill"]').first();
+  const family = () => action.evaluate(node=>getComputedStyle(node).fontFamily);
+  assert.match(await family(),/Paper Patrick Hand/);
+
+  await picker.selectOption('system');
+  assert.match(await family(),/^system-ui/);
+  await picker.selectOption('sans');
+  assert.match(await family(),/^"Paper Inter", "Paper Noto Sans KR"/);
+  assert.equal(await page.locator('.artboard.is-active').getAttribute('data-screen'),'tools');
+
+  await action.evaluate(node=>document.fonts.load(getComputedStyle(node).font,node.textContent));
+  const session = await page.context().newCDPSession(page);
+  await session.send('DOM.enable');
+  await session.send('CSS.enable');
+  const {root} = await session.send('DOM.getDocument');
+  const {nodeId} = await session.send('DOM.querySelector',{
+    nodeId:root.nodeId,selector:'.artboard.is-active [data-action="open-drill"]',
+  });
+  const {fonts} = await session.send('CSS.getPlatformFontsForNode',{nodeId});
+  assert.ok(fonts.some(font=>/^Noto Sans KR\b/.test(font.familyName) && font.isCustomFont && font.glyphCount>0),
+    JSON.stringify(fonts));
+
+  await page.reload();
+  await canvasOptions(page);
+  assert.equal(await picker.inputValue(),'sans');
+  await picker.selectOption('handwriting');
+  assert.match(await family(),/Paper Patrick Hand/);
+});
+
+test('screen requests update the connected preview and development delivery is acknowledged separately', async t=>{
+  const {startPreview} = require('../scripts/live-preview.cjs');
+  const {buildFlow} = require('../scripts/wireflow.cjs');
+  const {writeFileSync} = require('node:fs');
+  const {once} = require('node:events');
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(),'wireflow-connected-'));
+  t.after(()=>fs.rm(cwd,{recursive:true,force:true}));
+  const input = path.join(cwd,'flow.json'), output = path.join(cwd,'flow.html');
+  const flow = JSON.parse(await fs.readFile(sample+'.flow.json','utf8'));
+  flow.review = {...flow.review,locale:'en',changeRequests:[
+    {id:'chat-request',screen:'tools',text:'Add tool details from chat.',applied:'Added details from chat.'},
+  ]};
+  await fs.writeFile(input,JSON.stringify(flow));
+  let attempts = 0;
+  const {server,page:previewPath} = startPreview({
+    input,output,port:0,buildFlow,writeOutput:writeFileSync,
+    async edit() {
+      attempts++;
+      if (attempts===1) return {summary:'Temporary error. Try again.',patch:[]};
+      return {summary:'Renamed the selected action',patch:[
+        {op:'replace',path:['screens','0','actions','0','label'],valueJson:'"See drill details"'},
+      ]};
+    },
+  });
+  await once(server,'listening');
+  t.after(()=>{ server.closeAllConnections(); server.close(); });
+  const url = 'http://127.0.0.1:'+server.address().port;
+  assert.equal((await fetch(url+'/wireflow/request',{method:'POST'})).status,403);
+  const browser = await chromium.launch();
+  t.after(()=>browser.close());
+  const page = await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  await page.addInitScript(()=>{
+    Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copiedRequest=text;}}});
+  });
+  await page.goto(url+previewPath);
+  await openScreen(page,'tools');
+  await page.locator('#request-open').click();
+  await page.locator('#request-text').fill('Rename the drill action.');
+  await page.getByRole('button',{name:'Apply to Wireflow',exact:true}).click();
+  await page.getByText(/The Wireflow update failed/).waitFor();
+  await page.locator('#requests-open').click();
+  const list = page.locator('#request-list');
+  await list.getByText('Temporary error. Try again.').waitFor();
+  assert.equal(await page.locator('#copy-requests').isVisible(),false);
+  assert.match(await page.locator('#copy-development').innerText(),/\(1\)/);
+  await list.getByRole('button',{name:'Retry update'}).click();
+  await page.locator('.artboard.is-active [data-action="open-drill"]').filter({hasText:'See drill details'}).first()
+    .waitFor({timeout:12_000});
+  await list.getByText('Renamed the selected action').waitFor();
+  await list.getByRole('button',{name:'Request development changes in bulk (2)'}).click();
+  const developmentCopy = await page.evaluate(()=>window.copiedRequest);
+  assert.match(developmentCopy,/Rename the drill action/);
+  assert.match(developmentCopy,/Add tool details from chat/);
+  assert.equal(await list.getByText('Ready to send to development',{exact:true}).count(),2);
+  await list.getByRole('button',{name:'Mark sent to development'}).click();
+  assert.equal(await list.getByText('Sent to development',{exact:true}).count(),2);
+  assert.equal(await page.locator('#copy-development').isDisabled(),true);
 });

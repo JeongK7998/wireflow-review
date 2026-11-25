@@ -299,11 +299,11 @@ function createConnections(canvas, frames, pitch, annotations = []) {
     return route;
   }
 
-  function paintSelected(step,zoom,occupied) {
+  function paintSelected(step,zoom,occupied,focused=false) {
     const route = selectedRoute(step);
     if (!route) return;
     const unit = 1/zoom;
-    const color = step.failed ? issue : '#00685e';
+    const color = focused ? accent : step.failed ? issue : '#00685e';
     ctx.globalAlpha = 1;
     ctx.setLineDash([]);
     ctx.lineWidth = 5*unit;
@@ -364,6 +364,7 @@ function createConnections(canvas, frames, pitch, annotations = []) {
         if (!verification.has(key)) paint(key,targets,'normal',true);
       }
       const occupied = [];
+      let latest;
       for (const [key,entry] of verification) {
         const other = [...(edges.get(key) || [])].filter(target=>!entry.targets.has(target));
         if (other.length) paint(key,other,'normal',true);
@@ -375,8 +376,13 @@ function createConnections(canvas, frames, pitch, annotations = []) {
           action.numbers.push(step.number);
           action.failed ||= step.failed;
         }
-        for (const action of actions.values()) paintSelected(action,zoom,occupied);
+        for (const action of actions.values()) {
+          if (focus && action.from===focus.from && action.to===focus.to && action.action===focus.action) latest = action;
+          else paintSelected(action,zoom,occupied);
+        }
       }
+      if (latest) paintSelected(latest,zoom,occupied,true);
+      else if (focus) paint(connectionKey(focus.from,focus.to),[focus.to],'focus');
       ctx.globalAlpha = 1;
       return;
     }

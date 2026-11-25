@@ -257,7 +257,7 @@ button.stage-heading::before { vertical-align: text-bottom; }
   border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 4px 16px #29334a1a;
 }
 .canvas-more-panel button { white-space: nowrap; }
-.canvas-more-panel span { margin-left: 5px; color: var(--muted); font-weight: 500; }
+.canvas-more-panel #experimental-layout span { margin-left: 5px; color: var(--muted); font-weight: 500; }
 #zoom-readout:disabled { opacity: 1; }
 .screen-inspector {
   position: absolute; z-index: 2; display: grid; gap: 4px;
@@ -493,7 +493,7 @@ dialog h3 { font-size: .95rem; }
 .trace-list .trace-error { color: var(--warning); }
 @media (max-width: 580px) {
   .toolbar .tools { order: 2; flex-basis: 100%; flex-wrap: wrap; margin-left: 0; }
-  .requests-trigger { order: 1; }
+  .requests-anchor { order: 1; }
   .layout-toolbar { order: 3; }
   #test-mode-status { order: 4; }
   .tool, #screen-picker, #device-picker { min-height: 30px; padding: 4px 7px; font-size: .73rem; }
@@ -534,10 +534,27 @@ dialog h3 { font-size: .95rem; }
 .toolbar .canvas-tools { position: static; margin-left: auto; box-shadow: none; }
 .canvas-more-panel {
   top: calc(100% + 8px); bottom: auto; display: grid; gap: 7px; padding: 9px;
-  max-height: 65vh; overflow: auto;
+  width: min(232px, calc(100vw - 24px)); max-height: 65vh; overflow: auto;
+  grid-template-columns: minmax(0, 1fr);
 }
-.canvas-more-panel .tools { display: grid; margin: 0; }
-.canvas-more-panel select { width: 100%; }
+.canvas-more-panel .tools { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0; }
+.canvas-more-panel select { width: 100%; min-width: 0; }
+.canvas-more-panel :is(#screen-picker,#device-picker) { max-width: none; }
+.font-setting { display: grid; gap: 3px; }
+.font-setting label { padding-inline: 3px; color: var(--muted); font-size: .75rem; }
+#font-picker { cursor: pointer; }
+
+:root[data-preview-font="system"] :is(.paper-ui,.paper-canvas) {
+  --paper-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --paper-font-hand: var(--paper-font-sans);
+  --paper-font-hand-label: var(--paper-font-sans);
+}
+:root[data-preview-font="sans"] :is(.paper-ui,.paper-canvas) {
+  --paper-font-sans: "Paper Inter", "Paper Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --paper-font-hand: var(--paper-font-sans);
+  --paper-font-hand-label: var(--paper-font-sans);
+}
+
 .footer { justify-content: flex-start; min-height: 0; }
 .footer:has(#route-warning[hidden]):has(#screen-decisions[hidden]):has(#simulation[hidden]),
 .workspace:has(.canvas[data-overview]) .footer { display: none; }
@@ -550,11 +567,34 @@ dialog h3 { font-size: .95rem; }
 @media (max-width: 650px) {
   .toolbar { gap: 4px; padding: 5px 8px; }
   .toolbar .identity { flex-basis: 100%; }
-  .toolbar .canvas-tools { margin-left: 0; }
-  .toolbar .requests-trigger { margin-left: auto; }
-  .canvas-more-panel { left: auto; right: -24px; }
+  .toolbar .canvas-tools { position: relative; inset: auto; margin-left: 0; }
+  .toolbar .requests-anchor { margin-left: auto; }
+  .canvas-more { position: static; }
+  .canvas-more-panel { left: 0; right: auto; }
 }
 
 .canvas[data-overview] .stage-heading { font-size: var(--group-title-size); }
 .canvas[data-overview] .screen-label { font-size: var(--screen-label-size); }
 .canvas[data-overview] .screen-label span { font-size: .8em; }
+
+.requests-anchor { position: relative; }
+.requests-help {
+  position: absolute; z-index: 2; inset-inline-end: 0; top: calc(100% + 8px); pointer-events: none;
+  width: min(270px, calc(100vw - 24px)); padding: 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  box-shadow: 0 6px 18px #1b1b1b22; font-size: .82rem;
+}
+.requests-help::before {
+  content: ""; position: absolute; top: -6px; inset-inline-end: 18px; width: 10px; height: 10px;
+  border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+  background: var(--surface); transform: rotate(45deg);
+}
+.requests-help .tool { display: block; margin: 6px 0 0 auto; pointer-events: auto; }
+.request-copy-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+#request-update-status:empty, #request-mode-hint:empty { display: none; }
+#request-update-status { color: #206039; font-size: .78rem; font-weight: 700; }
+#request-mode-hint, .pending-request-tools { color: var(--muted); font-size: .76rem; }
+.pending-request-tools { margin-block: 0 10px; }
+.saved-request-title .request-delivery { color: var(--muted); font-size: .72rem; }
+.saved-request-text.request-error { color: var(--warning); }

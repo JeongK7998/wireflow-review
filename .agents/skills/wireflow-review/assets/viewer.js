@@ -3,13 +3,17 @@
 const $ = id => document.getElementById(id);
 const inputModel = Wireflow.validateModel(JSON.parse($('flow-data').textContent));
 const original = {...inputModel,review:inputModel.review || {},scenarios:inputModel.scenarios || [],decisions:inputModel.decisions || []};
+const previewToken = document.querySelector('meta[name="wireflow-preview-token"]')?.content;
 const {flowPath,verification:buildVerification} = JSON.parse($('build-data').textContent);
 const workshop = original.review.renderer === 'workshop';
 const flowIdentity = original.id || original.title;
 const legacyWorkshop = workshop && !original.id;
 const storagePrefix = legacyWorkshop ? 'ui-wire-flow-workshop' : 'ui-wire-flow:'+JSON.stringify([location.pathname,flowIdentity]);
 const storageKey = storagePrefix+'-requests';
+const requestsHelpKey = storagePrefix+'-requests-help';
+const liveViewKey = storagePrefix+'-live-view';
 const layoutKey = storagePrefix+'-layout';
+const fontKey = storagePrefix+'-preview-font';
 const artboards = new Map();
 const screenIssues = new Map();
 const defaultPlacement = defaultCanvasPlacement(original);
@@ -68,6 +72,10 @@ const savedRequests = {...readRequestState(),copyChoices:new Map()};
 let {requests,drafts,copyChoices} = savedRequests;
 let editingRequest;
 let requestHighlight;
+let requestsHelpSeen = false;
+const inProgressRequests = new Set();
+let developmentBatch = [];
+let updateNoticeTimer;
 $('sample-name').textContent = original.title;
 document.title = 'XU Wireflow Review | '+original.title;
 $('review-source').textContent = original.review.source || original.source || '';
@@ -98,26 +106,42 @@ function readRequestState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
     const legacyMemos = saved || !legacyWorkshop ? {} : JSON.parse(localStorage.getItem('ui-wire-flow-workshop-memos') || '{}');
-    return {
-      requests: (saved?.requests || []).filter(request=>screens.has(request.screen)).map(request=>{
-        // Relabel the generated expected/actual pair in older issue reports; keep personal notes.
-        if (request.issueKey && !request.planning && typeof request.text==='string') {
-          request.text = request.text.replace(/^기대 결과 — (.+)(?=\n실제 결과 — )/m,'더미 검사 기준 — $1')
-            .replace(/^Expected — (.+)(?=\nActual — )/m,'Expected in mockup — $1');
-        }
-        return request;
-      }),
-      drafts: new Map(Object.entries(saved?.drafts || legacyMemos)),
-    };
+    const requests = (saved?.requests || []).map(request=>{
+      // Relabel the generated expected/actual pair in older issue reports; keep personal notes.
+      if (request.issueKey && !request.planning && typeof request.text==='string') {
+        request.text = request.text.replace(/^기대 결과 — (.+)(?=\n실제 결과 — )/m,'더미 검사 기준 — $1')
+          .replace(/^Expected — (.+)(?=\nActual — )/m,'Expected in mockup — $1');
+      }
+      return request;
+    });
+    return {requests,drafts:new Map(Object.entries(saved?.drafts || legacyMemos)),proposals:saved?.proposals || []};
   } catch {
-    return {requests:[],drafts:new Map()};
+    return {requests:[],drafts:new Map(),proposals:[]};
+  }
+}
+
+const requestKey = request => request.key || 'request-'+request.id;
+const newRequestKey = () => 'request-'+crypto.getRandomValues(new Uint32Array(4)).join('-');
+
+function addAppliedRequests() {
+  for (const entry of original.review.changeRequests || []) {
+    const existing = requests.find(request=>requestKey(request)===entry.id && request.text===entry.text);
+    if (existing) {
+      Object.assign(existing,{applied:entry.applied,action:entry.action ?? existing.action,title:entry.title ?? existing.title});
+      delete existing.proposal;
+      continue;
+    }
+    requests.push({
+      id:(requests.at(-1)?.id ?? 0)+1, key:entry.id, screen:entry.screen, number:entry.number,
+      title:entry.title, text:entry.text, applied:entry.applied, action:entry.action,
+    });
   }
 }
 
 function persistRequests() {
   if (testRun) return;
   try {
-    localStorage.setItem(storageKey,JSON.stringify({requests,drafts:Object.fromEntries(drafts)}));
+    localStorage.setItem(storageKey,JSON.stringify({requests,drafts:Object.fromEntries(drafts),proposals:[...appliedProposals]}));
   } catch {
     // Storage may be unavailable for a standalone HTML file.
   }
@@ -216,7 +240,7 @@ function renderCamera(now) {
   positionInspector();
   $('zoom-readout').textContent = Math.round(zoom * 100) + '%';
   if (!canvas.hasAttribute('data-layout-moving')) {
-    paintConnections(edges,focusedStep,offset,zoom,layoutEditing ? undefined : verificationFlow?.edges ?? overviewRoute?.edges);
+    paintConnections(edges,verificationFlow ? undefined : focusedStep,offset,zoom,layoutEditing ? undefined : verificationFlow?.edges ?? overviewRoute?.edges);
   }
   if (slide || keepDragging) placeWorld();
 }
@@ -283,8 +307,8 @@ function collectEdges() {
   refreshOverviewRoute();
 }
 
-function record(from,to,label,error='') {
-  const step = {from,to,label,error};
+function record(from,to,label,error='',action) {
+  const step = {from,to,label,error,action};
   trace.push(step);
   if (to) {
     traversals.push(step);
@@ -528,7 +552,7 @@ function act(screen, id, updates, guard) {
   previews.set(screen.id,current);
   session = result.session;
   if (previous!==active && previous!==session.screen) renderBoard(previous);
-  record(screen.id,session.screen,result.action.label);
+  record(screen.id,session.screen,result.action.label,'',id);
   select(session.screen,true);
 }
 
@@ -857,7 +881,7 @@ function updateRequestResolutions(groups,audit,report) {
     else if (checks.length && checks.every(check=>passed.has(check))) resolved = true;
     if (resolved!==Boolean(request.resolved)) {
       request.resolved = resolved;
-      copyChoices.delete(request.id);
+      copyChoices.delete(requestKey(request));
       changed = true;
     }
   }
@@ -917,11 +941,12 @@ function addIssueRequest(finding) {
   if (requests.some(request=>canonicalRequestKey(request.issueKey)===finding.key)) return;
   const text = [finding.title,ui('재현 순서','Steps to reproduce'),...finding.steps.map((step,index)=>(index+1)+'. '+step),
     ui('더미 검사 기준 — ','Expected in mockup — ')+finding.expected,ui('실제 결과 — ','Actual — ')+finding.actual].join('\n');
-  enqueueRequest(finding.screen,text,requestContext(finding.screen,finding.initial),finding);
+  const request = enqueueRequest(finding.screen,text,requestContext(finding.screen,finding.initial),finding);
   updateIssueRequestButtons();
   const status = $('review-request-status');
   status.textContent = ui(`${screenNumber(finding.screen)} 화면의 문제를 AI 수정 요청에 담았어요. 현재 ${requests.length}건이에요.`,
     `Added the issue on ${screenNumber(finding.screen)} to AI requests. Total: ${requests.length}.`);
+  if (previewToken && !testRun) submitWireflowRequest(request);
 }
 
 function renderReviewFinding(finding,showProposal = false) {
@@ -1083,11 +1108,11 @@ function toggleReviewTest() {
   let target;
   let restoredMessage = '';
   if (testRun) {
-    ({model,session,previews,trace,traversals,focusedStep,scenarioRun,message:restoredMessage,active:target} = testRun);
+    ({model,session,previews,trace,traversals,focusedStep,scenarioRun,appliedProposals,message:restoredMessage,active:target} = testRun);
     testRun = undefined;
     ({requests,drafts,copyChoices} = savedRequests);
   } else {
-    testRun = {model,session,previews,trace,traversals,focusedStep,scenarioRun,message,active};
+    testRun = {model,session,previews,trace,traversals,focusedStep,scenarioRun,appliedProposals,message,active};
     scenarioRun = undefined;
     requests = [];
     drafts = new Map();
@@ -1132,6 +1157,10 @@ function applyReview(proposal) {
   closeVerificationFlow(false);
   appliedProposals = selected;
   screens = Wireflow.screensById(model);
+  syncProposalRequests();
+  persistRequests();
+  updateRequestCount(true);
+  if (proposal && !testRun) announceWireflowUpdate();
   collectEdges();
   message = '';
   for (const id of artboards.keys()) renderBoard(id);
@@ -1143,8 +1172,34 @@ function applyReview(proposal) {
   return true;
 }
 
+function syncProposalRequests() {
+  const previous = new Map(requests.filter(request=>request.proposal).map(request=>[requestKey(request),request]));
+  for (let index=requests.length-1; index>=0; index--) {
+    if (requests[index].proposal) requests.splice(index,1);
+  }
+  for (const proposal of original.proposals || []) {
+    if (!appliedProposals.has(proposal.id)) continue;
+    for (const {screen,action} of proposal.changes) {
+      const key = ['proposal',proposal.id,screen,action.id].join('/');
+      if (requests.some(request=>requestKey(request)===key)) continue;
+      requests.push({
+        id:(requests.at(-1)?.id ?? 0)+1,key,proposal:proposal.id,screen,
+        number:screenNumber(screen),title:screens.get(screen).title,action:action.id,
+        text:proposal.title+' — '+proposal.reason,
+        developmentDelivered:previous.get(key)?.developmentDelivered,
+        applied:action.label+' → '+auditScreenName(action.to)+'\n'+JSON.stringify(action,null,2),
+      });
+    }
+  }
+}
+
 function saveReviewedFlow() {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(model,null,2)+'\n'],{type:'application/json'}));
+  const changeRequests = requests.filter(request=>request.applied).map(request=>({
+    id:requestKey(request),screen:request.screen,number:request.number,title:requestScreenTitle(request),
+    action:request.action,text:request.text,applied:request.applied,
+  }));
+  const reviewed = {...model,review:{...model.review,changeRequests}};
+  const url = URL.createObjectURL(new Blob([JSON.stringify(reviewed,null,2)+'\n'],{type:'application/json'}));
   const link = element('a');
   link.href = url;
   link.download = (model.id || 'wireflow')+'-reviewed.json';
@@ -1162,7 +1217,11 @@ function openRequestEditor(request) {
   $('request-planning').replaceChildren(...evidenceNodes(rows));
   $('request-planning').hidden = !rows.length;
   $('request-text').value = drafts.get(request ? 'request/'+request.id : active) ?? request?.text ?? '';
-  $('request-save').textContent = request ? ui('변경 저장','Save changes') : ui('목록에 담기','Add to list');
+  $('request-save').textContent = previewToken && !testRun ? ui('와이어플로우에 반영','Apply to Wireflow') :
+    request ? ui('변경 저장','Save changes') : ui('수정 요청 저장','Save change request');
+  $('request-mode-hint').textContent = previewToken && !testRun ?
+    ui('반영 결과는 수정 요청 목록에서 확인할 수 있어요.','Review the result in the change request list.') :
+    ui('저장한 요청은 목록에서 복사해 채팅에 전달할 수 있어요.','Copy the saved request from the list to your chat.');
   clearRequestFeedback();
   updateRequestSave();
   $('request-editor').hidden = false;
@@ -1188,8 +1247,19 @@ function updateRequestSave() {
   $('request-save').disabled = !text || text===editingRequest?.text;
 }
 
+function dismissRequestsHelp() {
+  $('requests-help').hidden = true;
+  if (testRun || !requests.length) return;
+  requestsHelpSeen = true;
+  try { localStorage.setItem(requestsHelpKey,'seen'); } catch {}
+}
+
 function updateRequestCount(highlight = false) {
   const trigger = $('requests-open');
+  if (!requestsHelpSeen) {
+    try { requestsHelpSeen = localStorage.getItem(requestsHelpKey)==='seen'; } catch {}
+  }
+  $('requests-help').hidden = Boolean(testRun) || requestsHelpSeen || !requests.length;
   $('request-count').textContent = requests.length;
   trigger.toggleAttribute('data-has-requests',requests.length>0);
   trigger.setAttribute('aria-label',ui(`수정 요청 목록 ${requests.length}건`,`AI change requests: ${requests.length}`));
@@ -1208,18 +1278,72 @@ function requestContext(id,current = context(id).vars) {
 }
 
 function enqueueRequest(screen,text,state,finding) {
-  requests.push({
+  const request = {
     id: (requests.at(-1)?.id ?? 0)+1,
+    key: newRequestKey(),
     screen,
+    title: screens.get(screen).title,
     number: screenNumber(screen),
     planning: finding ? findingPlanning(finding) : planningEvidence(screen),
     text,
     size: screenWidth+' × '+screenHeight+' CSS px',
     state,
     ...(finding && {issueKey:finding.key,checkIds:finding.checkIds,action:finding.action,field:finding.field}),
-  });
+  };
+  requests.push(request);
   persistRequests();
   updateRequestCount(true);
+  return request;
+}
+
+function announceWireflowUpdate(count = 1) {
+  const status = $('request-update-status');
+  status.textContent = ui(`와이어플로우 반영 완료 · ${count}건`,`Applied in Wireflow · ${count}`);
+  clearTimeout(updateNoticeTimer);
+  updateNoticeTimer = setTimeout(()=>{ status.textContent = ''; },8000);
+}
+
+function announceNewBuildRequests() {
+  const updated = (original.review.changeRequests || []).map(request=>request.id);
+  if (!updated.length) return;
+  let count = updated.length;
+  try {
+    const key = storagePrefix+'-last-applied';
+    const seen = new Set(JSON.parse(sessionStorage.getItem(key) || '[]'));
+    count = updated.filter(id=>!seen.has(id)).length;
+    sessionStorage.setItem(key,JSON.stringify(updated));
+  } catch {}
+  if (count) announceWireflowUpdate(count);
+}
+
+async function submitWireflowRequest(request) {
+  const id = requestKey(request);
+  if (request.applied || testRun || !previewToken || inProgressRequests.has(id)) return;
+  inProgressRequests.add(id);
+  delete request.applyError;
+  $('request-status').textContent = ui('와이어플로우에 반영 중…','Updating the Wireflow…');
+  if ($('request-list').open) renderRequestList();
+  try {
+    const response = await fetch('/wireflow/request',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Wireflow-Token':previewToken},
+      body:JSON.stringify({id,screen:request.screen,text:request.text}),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    request.applied = result.applied;
+    $('request-status').textContent = ui('와이어플로우 반영 완료. 개발 요청은 목록에서 보낼 수 있어요.',
+      'Applied in Wireflow. You can request development from the list.');
+    announceWireflowUpdate();
+  } catch (error) {
+    request.applyError = error.message;
+    $('request-status').textContent = ui('와이어플로우 반영에 실패했어요. 목록에서 사유를 확인하고 다시 시도할 수 있어요.',
+      'The Wireflow update failed. Check the reason in the list and retry.');
+  } finally {
+    inProgressRequests.delete(id);
+    persistRequests();
+    if ($('request-list').open) renderRequestList();
+  }
 }
 
 function saveRequest(event) {
@@ -1227,21 +1351,31 @@ function saveRequest(event) {
   if ($('request-save').disabled) return;
   const text = $('request-text').value.trim();
   const edited = Boolean(editingRequest);
+  let request;
   if (edited) {
-    drafts.delete('request/'+editingRequest.id);
-    editingRequest.text = text;
+    request = editingRequest;
+    drafts.delete('request/'+request.id);
+    const key = requestKey(request);
+    const choice = copyChoices.get(key);
+    copyChoices.delete(key);
+    request.key = newRequestKey();
+    request.text = text;
+    delete request.applyError;
+    if (choice!==undefined) copyChoices.set(request.key,choice);
     persistRequests();
     closeRequestEditor(true);
     openRequestList();
     $('copy-status').textContent = ui('요청을 수정했어요.','Request updated.');
   } else {
     drafts.delete(active);
-    enqueueRequest(active,text,requestContext(active));
+    request = enqueueRequest(active,text,requestContext(active));
     $('request-text').value = '';
     updateRequestSave();
-    $('request-status').textContent = ui(`${screenNumber(active)} 화면의 요청을 담았어요.`,`Added your request for screen ${screenNumber(active)}.`);
+    $('request-status').textContent = ui('와이어플로우 반영 대기 · 수정 요청 목록에 저장했어요.',
+      'Waiting for a Wireflow update · Saved to the request list.');
     $('saved-request-list').hidden = false;
   }
+  if (previewToken && !testRun) submitWireflowRequest(request);
 }
 
 function openDescription() {
@@ -1284,82 +1418,138 @@ function closeDescription(restoreFocus = false) {
 }
 
 const requestStatus = request => request.resolved ? ui('해결됨','Resolved') : ui('수정 필요','Changes needed');
-const isRequestSelected = request => copyChoices.get(request.id) ?? !request.resolved;
+const isRequestSelected = request => copyChoices.get(requestKey(request)) ??
+  (request.applied ? !request.developmentDelivered : !request.resolved);
 const selectedRequests = () => requests.filter(isRequestSelected);
 
 function clearCopyFeedback() {
   $('copy-text').hidden = true;
   $('copy-status').textContent = '';
+  $('confirm-development').hidden = true;
+  developmentBatch = [];
 }
 
 function updateCopyButton() {
-  const count = selectedRequests().length;
-  $('copy-requests').disabled = !count;
-  $('copy-requests').textContent = ui('AI에 붙여넣을 요청 복사','Copy requests for AI')+(count ? ui(` (${count}건)`,` (${count})`) : '');
+  const selected = selectedRequests();
+  const pending = selected.filter(request=>!request.applied).length;
+  const applied = selected.length-pending;
+  $('pending-request-tools').hidden = Boolean(previewToken && !testRun) || !pending;
+  const controls = [
+    ['copy-requests',pending,ui('대기 요청 채팅으로 복사','Copy waiting requests to chat')],
+    ['copy-development',testRun ? 0 : applied,ui('일괄 개발 반영 요청','Request development changes in bulk')],
+  ];
+  for (const [id,count,label] of controls) {
+    $(id).disabled = !count;
+    $(id).textContent = label+(count ? ui(` (${count}건)`,` (${count})`) : '');
+  }
   clearCopyFeedback();
 }
 
-const originalRequestNumber = request => request.number ?? screens.get(request.screen).number;
+const originalRequestNumber = request => request.number ?? screenNumber(request.screen) ?? '';
+const currentRequestNumber = request => screenNumber(request.screen) ?? originalRequestNumber(request);
+const requestScreenTitle = request => screens.get(request.screen)?.title ?? request.title ?? request.screen;
 
 function openRequestList() {
+  dismissRequestsHelp();
   if (!$('review').hidden || verificationFlow) setReviewOpen(false);
   closeRequestEditor();
   closeDescription();
+  renderRequestList();
+  $('request-list').showModal();
+}
+
+function renderRequestList() {
   $('request-list-title').textContent = testRun ? ui('테스트 AI 수정 요청','Test AI change requests') : ui('AI 수정 요청','AI change requests');
   $('requests-empty').hidden = requests.length>0;
   $('requests-instructions').hidden = !requests.length;
-  $('saved-requests').replaceChildren(...requests.map(request=>{
-    const screen = screens.get(request.screen);
+  const ordered = [...requests].sort((a,b)=>requestOrder(a)-requestOrder(b));
+  $('saved-requests').replaceChildren(...ordered.map(request=>{
+    const title = [currentRequestNumber(request),requestScreenTitle(request)].filter(Boolean).join(' ');
     const checkbox = element('input');
     checkbox.type = 'checkbox';
     checkbox.checked = isRequestSelected(request);
-    checkbox.setAttribute('aria-label',ui(`${screenNumber(screen.id)} ${screen.title} 요청 ${request.id} 복사에 포함`,
-      `Include ${screenNumber(screen.id)} ${screen.title} request ${request.id} when copying`));
+    checkbox.setAttribute('aria-label',ui(`${title} 요청 ${request.id} 복사에 포함`,`Include ${title} request ${request.id} when copying`));
     checkbox.addEventListener('change',()=>{
-      copyChoices.set(request.id,checkbox.checked);
+      copyChoices.set(requestKey(request),checkbox.checked);
       updateCopyButton();
     });
-    const edit = button(ui('수정','Edit'),'tool',()=>{
-      $('request-list').close();
-      if (!$('review').hidden) setReviewOpen(false);
-      select(request.screen);
-      openRequestEditor(request);
-    });
-    edit.setAttribute('aria-label',ui(`${screenNumber(screen.id)} ${screen.title} 요청 ${request.id} 수정`,
-      `Edit ${screenNumber(screen.id)} ${screen.title} request ${request.id}`));
-    const status = element('span','request-status-badge',requestStatus(request));
-    status.toggleAttribute('data-resolved',Boolean(request.resolved));
+    const running = inProgressRequests.has(requestKey(request));
+    let edit;
+    if (!request.applied && !running && screens.has(request.screen)) {
+      edit = button(ui('수정','Edit'),'tool',()=>{
+        $('request-list').close();
+        if (!$('review').hidden) setReviewOpen(false);
+        select(request.screen);
+        openRequestEditor(request);
+      });
+      edit.setAttribute('aria-label',ui(`${title} 요청 ${request.id} 수정`,`Edit ${title} request ${request.id}`));
+    }
+    const statusText = request.applied ? ui('와이어플로우 반영 완료','Applied in Wireflow') :
+      running ? ui('와이어플로우 반영 중','Updating Wireflow') :
+      request.applyError ? ui('와이어플로우 반영 실패','Wireflow update failed') :
+      request.issueKey ? requestStatus(request) : ui('와이어플로우 반영 대기','Waiting for Wireflow update');
+    const status = element('span','request-status-badge',statusText);
+    status.toggleAttribute('data-resolved',Boolean(request.applied || request.resolved));
+    const delivery = request.applied ? element('span','request-delivery',request.developmentDelivered ?
+      ui('개발 요청 전달 완료','Sent to development') : ui('개발 요청 전달 전','Ready to send to development')) : null;
+    const retry = previewToken && !testRun && !request.applied && !running && screens.has(request.screen) ?
+      button(ui(request.applyError ? '다시 반영' : '와이어플로우에 반영',request.applyError ? 'Retry update' : 'Apply to Wireflow'),
+        'tool',()=>submitWireflowRequest(request)) : null;
     const detailStart = request.issueKey ? request.text.indexOf('\n') : -1;
     return write(element('li'),write(element('div','saved-request-head'),
-      write(element('div','saved-request-title'),write(element('label'),checkbox,screenNumber(screen.id)+' '+screen.title),status),edit),
-      originalRequestNumber(request)!==screenNumber(screen.id) ?
+      write(element('div','saved-request-title'),write(element('label'),checkbox,title),status,delivery),edit,retry),
+      originalRequestNumber(request)!==currentRequestNumber(request) ?
         element('p','saved-request-number',ui('이전 번호 ','Previous number ')+originalRequestNumber(request)) : null,
       planningList(requestPlanning(request)),
+      request.applyError ? element('p','saved-request-text request-error',request.applyError) : null,
       element('p','saved-request-text',detailStart<0 ? request.text : request.text.slice(0,detailStart)),
+      request.applied ? write(element('dl','finding-result planning-evidence'),
+        element('dt','',ui('반영 내용','Applied change')),element('dd','saved-request-text',request.applied)) : null,
       detailStart<0 ? null : write(element('details','saved-request-detail'),element('summary','',ui('재현 순서와 결과','Reproduction steps and results')),
         element('p','saved-request-text',request.text.slice(detailStart+1))));
   }));
   updateCopyButton();
-  $('request-list').showModal();
 }
 
-async function copyRequestBatch() {
-  const selected = selectedRequests();
+function requestOrder(request) {
+  return request.applied ? Number(Boolean(request.developmentDelivered)) : 2;
+}
+
+function confirmDevelopmentDelivery() {
+  const count = developmentBatch.length;
+  for (const request of developmentBatch) {
+    request.developmentDelivered = true;
+    copyChoices.delete(requestKey(request));
+  }
+  persistRequests();
+  renderRequestList();
+  $('copy-status').textContent = ui(`개발 요청 ${count}건을 전달 완료로 표시했어요.`,`Marked ${count} requests as sent to development.`);
+}
+
+async function copyRequestBatch(development = false) {
+  if (development && testRun) return;
+  const selected = selectedRequests().filter(request=>Boolean(request.applied)===development);
   if (!selected.length) return;
   const entries = selected.map((request,index)=>{
-    const screen = screens.get(request.screen);
     return [
-      (index+1)+'. ['+screenNumber(screen.id)+'] '+screen.title+' ('+screen.id+')',
-      originalRequestNumber(request)!==screenNumber(screen.id) ? ui('이전 화면 번호: ','Previous screen number: ')+originalRequestNumber(request) : '',
-      ui('화면 크기: ','Screen size: ')+request.size,
+      (index+1)+'. ['+currentRequestNumber(request)+'] '+requestScreenTitle(request)+' ('+request.screen+')',
+      'Request ID: '+requestKey(request),
+      originalRequestNumber(request)!==currentRequestNumber(request) ? ui('이전 화면 번호: ','Previous screen number: ')+originalRequestNumber(request) : '',
+      request.size ? ui('화면 크기: ','Screen size: ')+request.size : '',
       request.action ? ui('조작 ID: ','Action ID: ')+request.action : request.field ? ui('입력 항목: ','Field: ')+request.field : '',
-      ui('요청 상태: ','Request status: ')+requestStatus(request),
-      ui('검토 상태: ','Review status: ')+request.state,
+      development ? '' : ui('요청 상태: ','Request status: ')+requestStatus(request),
+      request.state ? ui('검토 상태: ','Review status: ')+request.state : '',
       ...requestPlanning(request).map(([label,value])=>label+' — '+value),
       ui('수정 요청: ','Change request: ')+request.text,
+      development ? ui('와이어플로우 반영 내용: ','Applied in Wireflow: ')+request.applied : '',
     ].filter(Boolean).join('\n');
   });
   const copy = [
+    testRun ? ui('아래 항목을 테스트 모드에서 재현해 주세요.','Reproduce these items in test mode.') :
+    development ? ui('아래 변경을 실제 앱 코드에 적용하고 관련 동작을 테스트해 주세요.',
+      'Implement these changes in the actual app code and test the affected behavior.') :
+      ui('아래 요청을 와이어플로우에 반영하고, 각 Request ID와 원문 및 반영 내용을 흐름 JSON의 review.changeRequests에 기록한 뒤 같은 HTML을 다시 빌드해 주세요.',
+        'Apply these requests to the Wireflow. Record each Request ID, original text and applied change in review.changeRequests and rebuild the same HTML.'),
     model.title+(testRun ? ui(' · 테스트 모드 재현용 수정 요청',' · Test mode change requests') : ui(' · 화면 수정 요청',' · Screen change requests')),
     ui('흐름 파일: ','Flow file: ')+flowPath,
     ...(model.id ? [ui('흐름 ID: ','Flow ID: ')+model.id] : []),
@@ -1369,8 +1559,9 @@ async function copyRequestBatch() {
   clearCopyFeedback();
   try {
     await navigator.clipboard.writeText(copy);
-    if ($('request-list').open) $('copy-status').textContent = ui(`요청 ${selected.length}건을 복사했어요. 작업 중인 AI 채팅에 붙여넣으세요.`,
-      `Copied ${selected.length} requests. Paste them into your current AI chat.`);
+    if ($('request-list').open) $('copy-status').textContent = development ?
+      ui(`개발 요청 ${selected.length}건을 복사했어요. 앱 개발 채팅에 붙여넣고 전송하세요.`,`Copied ${selected.length} requests. Paste and send them in your app development chat.`) :
+      ui(`요청 ${selected.length}건을 복사했어요. 와이어플로우 채팅에 붙여넣으세요.`,`Copied ${selected.length} requests. Paste them into your Wireflow chat.`);
   } catch {
     if (!$('request-list').open) return;
     const field = $('copy-text');
@@ -1378,7 +1569,13 @@ async function copyRequestBatch() {
     field.value = copy;
     field.focus();
     field.select();
-    $('copy-status').textContent = ui('선택된 내용을 복사해 AI 채팅에 붙여 넣으세요.','Copy the selected text and paste it into your AI chat.');
+    $('copy-status').textContent = development ?
+      ui('선택된 내용을 복사해 앱 개발 채팅에 붙여넣으세요.','Copy the selected text into your app development chat.') :
+      ui('선택된 내용을 복사해 와이어플로우 채팅에 붙여넣으세요.','Copy the selected text into your Wireflow chat.');
+  }
+  if (development && $('request-list').open) {
+    developmentBatch = selected;
+    $('confirm-development').hidden = false;
   }
 }
 
@@ -1734,11 +1931,20 @@ function applyCustomSize(event) {
 $('route-proposals-open').addEventListener('click',openRouteProposals);
 $('route-picker').addEventListener('change', () => {
   if (layoutEditing) setLayoutEditing(false);
+  const menu = $('canvas-more');
+  menu.open = false;
+  menu.querySelector('summary').focus({preventScroll:true});
   closeVerificationFlow(false);
   refreshOverviewRoute();
   showOverview();
 });
 $('screen-picker').addEventListener('change', event=>select(event.target.value));
+$('font-picker').addEventListener('change',event=>{
+  const font = event.target.value;
+  document.documentElement.dataset.previewFont = font;
+  try { localStorage.setItem(fontKey,font); } catch {}
+  placeWorld();
+});
 $('device-picker').addEventListener('change',event=>{
   const id = event.target.value;
   if (id==='edit-custom') openCustomSize();
@@ -1790,7 +1996,16 @@ $('request-editor').addEventListener('keydown',event=>{
 $('request-form').addEventListener('submit',saveRequest);
 $('requests-open').addEventListener('click',openRequestList);
 $('saved-request-list').addEventListener('click',openRequestList);
-$('copy-requests').addEventListener('click',copyRequestBatch);
+document.addEventListener('pointerdown',event=>{
+  if (!$('requests-help').hidden && !event.target.closest('.requests-anchor')) dismissRequestsHelp();
+});
+$('requests-help-close').addEventListener('click',()=>{
+  dismissRequestsHelp();
+  $('requests-open').focus();
+});
+$('copy-requests').addEventListener('click',()=>copyRequestBatch());
+$('copy-development').addEventListener('click',()=>copyRequestBatch(true));
+$('confirm-development').addEventListener('click',confirmDevelopmentDelivery);
 $('description-open').addEventListener('click',()=>{
   if ($('screen-description').hidden) openDescription();
   else closeDescription(true);
@@ -1991,6 +2206,74 @@ canvas.addEventListener('gestureend',event=>{
   systemPinch = undefined;
 },{passive:false});
 
+function restoreLiveView() {
+  let view;
+  try {
+    view = JSON.parse(sessionStorage.getItem(liveViewKey));
+    sessionStorage.removeItem(liveViewKey);
+  } catch {}
+  if (!view) return;
+  if (!view.overview && screens.has(view.screen)) select(view.screen);
+  if (view.list) openRequestList();
+  else if (view.editor && !view.overview && active===view.screen) {
+    const request = requests.find(item=>requestKey(item)===view.editor);
+    if (view.editor===true || (request && !request.applied)) openRequestEditor(request);
+  }
+}
+
+function watchPreviewBuild() {
+  const revision = document.querySelector('meta[name="wireflow-revision"]')?.content;
+  if (!revision || !['file:','http:','https:'].includes(location.protocol)) return;
+  const probe = element('span');
+  probe.id = 'wireflow-live-probe';
+  probe.hidden = true;
+  document.body.append(probe);
+  const url = new URL(location.href);
+  url.pathname += '.live.css';
+  url.hash = '';
+  const poll = () => {
+    const link = element('link');
+    link.rel = 'stylesheet';
+    url.search = '?check='+Date.now();
+    link.href = url.href;
+    const retry = () => {
+      link.remove();
+      setTimeout(poll,2000);
+    };
+    link.onerror = retry;
+    link.onload = () => {
+      const current = getComputedStyle(probe).getPropertyValue('--wireflow-revision').trim();
+      if (!/^[a-f0-9]{64}$/.test(current) || current===revision) {
+        retry();
+        return;
+      }
+      const list = $('request-list').open;
+      const editor = !$('request-editor').hidden && (editingRequest ? requestKey(editingRequest) : true);
+      try { sessionStorage.setItem(liveViewKey,JSON.stringify({screen:active,overview:fittingOverview,list,editor})); } catch {}
+      location.reload();
+    };
+    document.head.append(link);
+  };
+  setTimeout(poll,2000);
+}
+
+addAppliedRequests();
+const availableProposals = new Set((original.proposals || []).map(proposal=>proposal.id));
+const restoredProposals = new Set(savedRequests.proposals.filter(id=>availableProposals.has(id)));
+if (restoredProposals.size) {
+  try {
+    model = Wireflow.applyProposals(original,restoredProposals);
+    appliedProposals = restoredProposals;
+    screens = Wireflow.screensById(model);
+  } catch {}
+}
+syncProposalRequests();
+const fontPicker = $('font-picker');
+let savedFont;
+try { savedFont = localStorage.getItem(fontKey); } catch {}
+if ([...fontPicker.options].some(option=>option.value===savedFont)) fontPicker.value = savedFont;
+document.documentElement.dataset.previewFont = fontPicker.value;
+document.fonts.addEventListener('loadingdone',placeWorld);
 createWorld();
 populateRoutePicker();
 const blockedScenario = model.proposals?.length && Wireflow.check(model,ui).scenarios.find(scenario=>!scenario.passed);
@@ -2002,6 +2285,9 @@ setDevice(defaultDevice);
 select(active);
 showOverview();
 updateRequestCount();
+announceNewBuildRequests();
+restoreLiveView();
+watchPreviewBuild();
 renderRequirementPanel();
 new ResizeObserver(()=>{
   if (centeredSize.width===canvas.clientWidth && centeredSize.height===canvas.clientHeight) return;

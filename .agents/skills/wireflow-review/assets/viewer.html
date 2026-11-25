@@ -2,6 +2,7 @@
 <html lang="ko" data-build="ready">
 <head>
   <meta charset="utf-8">
+  <meta name="wireflow-revision" content="<!-- wireflow:revision -->">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>XU Wireflow Review</title>
   <style>/* wireflow:styles */</style>
@@ -27,15 +28,30 @@
               <span class="toolbar-picker"><select id="device-picker"></select></span>
               <button id="test-mode" type="button" class="tool" aria-pressed="false" hidden data-en="Test mode">테스트 모드</button>
             </div>
+            <div class="font-setting">
+              <label for="font-picker" data-en="Preview font">미리보기 글꼴</label>
+              <select id="font-picker" class="tool">
+                <option value="handwriting" data-en="Handwriting">필기체</option>
+                <option value="system" data-en="System font">시스템 글꼴</option>
+                <option value="sans">Inter / Noto Sans KR</option>
+              </select>
+            </div>
             <select id="route-picker" class="tool" aria-label="표시할 경로" data-en-aria-label="Show a path"></select>
             <button type="button" id="center" class="center" data-en="Fit selected screen">선택 화면에 맞춤</button>
             <button id="experimental-layout" type="button"><span data-en="Edit layout">배치 편집</span> <span data-en="Experimental">실험 기능</span></button>
           </div>
         </details>
       </div>
-      <button id="requests-open" type="button" class="tool requests-trigger" aria-haspopup="dialog" aria-controls="request-list">
-        <span data-en="AI change requests">수정 요청 목록</span> <span id="request-count" aria-hidden="true">0</span>
-      </button>
+      <div class="requests-anchor">
+        <button id="requests-open" type="button" class="tool requests-trigger" aria-haspopup="dialog" aria-controls="request-list">
+          <span data-en="AI change requests">수정 요청 목록</span> <span id="request-count" aria-hidden="true">0</span>
+        </button>
+        <aside id="requests-help" class="requests-help" aria-label="수정 요청 목록 안내" data-en-aria-label="Change requests guide" hidden>
+          <p role="status" data-en="Open this list to send changes applied in Wireflow to your app project in one request.">여기에서 와이어플로우에 반영된 변경을 모아 실제 개발에 적용해 달라고 요청할 수 있어요.</p>
+          <button id="requests-help-close" type="button" class="tool quiet" data-en="Got it">확인</button>
+        </aside>
+      </div>
+      <p id="request-update-status" role="status"></p>
       <div class="layout-toolbar" id="layout-toolbar" hidden>
         <button id="layout-edit" type="button" class="tool" data-en="Finish editing layout">실험 편집 완료</button>
         <button id="number-preview" type="button" class="tool soft" data-en="Renumber screens">번호 다시 매기기</button>
@@ -133,8 +149,9 @@
           <form id="request-form">
             <label for="request-text" data-en="What should change on this screen?">이 화면에서 바꿀 내용</label>
             <textarea id="request-text" rows="3" placeholder="바꾸려는 요소와 원하는 동작을 적어 보세요." data-en-placeholder="Describe the element and how it should behave."></textarea>
-            <button id="request-save" type="submit" class="tool primary" disabled data-en="Add to list">목록에 담기</button>
+            <button id="request-save" type="submit" class="tool primary" disabled data-en="Apply to Wireflow">와이어플로우에 반영</button>
           </form>
+          <p id="request-mode-hint"></p>
           <div class="request-feedback">
             <p id="request-status" role="status"></p>
             <button id="saved-request-list" type="button" class="tool quiet" hidden data-en="View AI change requests">AI 수정 요청 보기</button>
@@ -195,10 +212,16 @@
   </dialog>
   <dialog id="request-list" aria-labelledby="request-list-title">
     <form method="dialog" class="dialog-head"><h2 id="request-list-title"><span data-en="AI change requests">AI 수정 요청</span></h2><button class="tool quiet" aria-label="AI 수정 요청 닫기" data-en-aria-label="Close AI change requests" data-en="Close">닫기</button></form>
-    <p id="requests-empty" data-en="Write a change request beside the selected screen and choose Add to list.">선택한 화면 옆에서 수정 요청을 작성하고 ‘목록에 담기’를 누르세요.</p>
-    <p id="requests-instructions" hidden data-en="Select requests to copy and paste them into your current AI chat.">보낼 요청을 골라 복사한 뒤, 지금 작업 중인 AI 채팅에 붙여넣으세요.</p>
+    <p id="requests-empty" data-en="Write a request in your chat or beside a screen to update its Wireflow.">채팅이나 화면 옆 수정 요청에서 와이어플로우에 반영할 내용을 작성하세요.</p>
+    <p id="requests-instructions" hidden data-en="Review the changes already applied in Wireflow, then send the selected changes to your app development chat in one request.">와이어플로우에 반영된 내용을 확인하고, 선택한 변경을 앱 개발 채팅에 한 번에 전달하세요.</p>
     <ol id="saved-requests" class="saved-requests"></ol>
-    <button id="copy-requests" type="button" class="tool primary" disabled data-en="Copy requests for AI">AI에 붙여넣을 요청 복사</button>
+    <p id="pending-request-tools" class="pending-request-tools" hidden>
+      <button id="copy-requests" type="button" class="tool quiet" disabled data-en="Copy waiting requests to chat">대기 요청 채팅으로 복사</button>
+    </p>
+    <div class="request-copy-actions">
+      <button id="copy-development" type="button" class="tool primary" disabled data-en="Request development changes in bulk">일괄 개발 반영 요청</button>
+      <button id="confirm-development" type="button" class="tool" hidden data-en="Mark sent to development">개발 채팅에 전달했어요</button>
+    </div>
     <p id="copy-status" role="status"></p>
     <textarea id="copy-text" rows="5" hidden readonly aria-label="복사할 요청" data-en-aria-label="Requests to copy"></textarea>
   </dialog>

@@ -195,6 +195,18 @@ const Wireflow = (() => {
       requireValue(decision && ids.has(decision.screen) && typeof decision.question === 'string' && decision.question.trim(),
         'Each decision needs a valid screen and question');
     }
+    const requests = model.review?.changeRequests;
+    requireValue(requests === undefined || Array.isArray(requests), 'review.changeRequests must be an array');
+    const requestIds = new Set();
+    for (const request of requests || []) {
+      const fields = ['id','screen','text','applied'];
+      const optional = ['action','number','title'];
+      requireValue(isObject(request) && fields.every(key => typeof request[key]==='string' && request[key].trim()) &&
+        optional.every(key => request[key]===undefined || typeof request[key]==='string') &&
+        identifier.test(request.screen) && !requestIds.has(request.id),
+      'Each change request needs a unique ID, screen ID, original text and applied change');
+      requestIds.add(request.id);
+    }
     const requirements = model.review?.requirements;
     requireValue(requirements === undefined || Array.isArray(requirements), 'review.requirements must be an array');
     const requirementIds = new Set();

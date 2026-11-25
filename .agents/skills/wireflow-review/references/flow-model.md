@@ -70,8 +70,6 @@ Define each observable planning requirement in `review.requirements` with an `id
 
 Use `review.audit.explore: true` for a flow whose navigation states change through discrete screen actions. The browser traverses visible actions from the primary start and declared entries, using the initial variables at each entry. It deduplicates by screen ID and declared variable values, and flags reachable states with no completion or return and actions whose conditions are never met on a reached screen. Exploration is capped at 256 states. Local form input combinations require separate tests. If a run is incomplete, its scope is shown and it withholds findings that require exhaustive coverage.
 
-The copy header identifies the actual flow file and flow ID. Each review finding carries a screen ID and, where applicable, an action ID or field. Keep the same flow ID and HTML output path as you rebuild. The browser stores requests for that output locally. A request advances to **해결됨** only when its linked checks have passed. Open **Flow 검증** after loading the rebuilt preview to update the request list.
-
 For a spatial interaction, attach rectangles to the visual block, for example
 `"hotspots":[{"action":"door","x":65,"y":25,"width":25,"height":55}]`.
 Coordinates are percentages from the top left. Each rectangle binds an existing in-app action on that screen. The viewer renders its keyboard-accessible button in the rectangle. Measure and click the target on the scaled image when reviewing spatial requirements. Required text fields reject whitespace-only input while preserving the original text of nonempty submissions.
@@ -79,3 +77,33 @@ Coordinates are percentages from the top left. Each rectangle binds an existing 
 A `review.requirements` entry can carry `origin: "source"` for a behavior explicitly required by the brief or `origin: "inferred"` for an assumption. Put the behavior in `expected`. List optional design alternatives as stable IDs in `suggestedScreens`. Bind the originating `screen` and `action` so findings and change requests preserve the distinction. For example, resubmission can be required while opening a dedicated upload screen remains a proposal. A destination asserted by a test is a mockup expectation. Requirement entries without origin keep their verification meaning.
 
 For a supplied diagram or image, place its PNG, JPEG or WebP data URI in top-level `images` under a stable ID. Reference that ID with `image` in a visual block, match its aspect to the artwork and give it a descriptive label. `ui.layout: "split"` places the first visual beside the remaining blocks at frame widths of 720 CSS pixels and up. Smaller frames stack the same content.
+
+
+## Change requests
+
+Save each applied chat or viewer request in `review.changeRequests`. The list in the viewer shows the original text alongside the applied change. A browser request copied via **Copy waiting requests to chat** includes a Request ID. Reuse that exact value to update the entry already stored in the browser. For a direct chat request, assign a new unique ID. Keep the same flow ID and output HTML path so the viewer can recover its local requests and drafts.
+
+```json
+{
+  "id": "request-from-chat-01",
+  "screen": "search-empty",
+  "number": "02.03",
+  "title": "No search results",
+  "action": "clear-search",
+  "text": "Let users clear filters from the empty screen.",
+  "applied": "Added a Clear filters button that resets all filters and returns to the results list."
+}
+```
+
+The required fields are `id`, `screen`, `text` and `applied`. Use `action` when the change targets a control. Include `number` and `title` for a screen that was removed. Describe the implemented interaction, destination and state changes in `applied`. Keep unresolved requests pending. The viewer adds selected built-in fixes to the same list and includes them in the reviewed JSON download. **Request development changes in bulk** copies selected applied entries for the app development chat. The user marks a batch as sent after delivering it. Issue checks retain their own resolution status.
+
+The build generates a companion file named `VIEWER.html.live.css` beside the standalone HTML. Keep both at the same path for automatic preview refresh after a rebuild. The HTML can still be opened by itself for review.
+
+Use **More canvas tools → Preview font** to choose Handwriting, System font, or the bundled Inter and Noto Sans KR. The viewer saves the choice for the current flow. The Korean font asset includes Hangul and common Korean punctuation. It comes from [Noto Sans KR in Google Fonts](https://github.com/google/fonts/blob/4efc2774c63917927efe769ca845def6bd6debae/ofl/notosanskr/OFL.txt).
+
+
+## Connected preview
+
+With an authenticated Codex CLI, run `node <skill-folder>/scripts/wireflow.cjs serve FLOW.json VIEWER.html [PORT]` from the project root and open the printed URL. The preview listens on localhost only. A screen request applies a validated patch to the flow JSON, saves the request with the applied change and rebuilds the preview. The Codex child runs in a temporary workspace with read-only sandboxing. If a specific accessible CLI model is needed, set `WIREFLOW_CODEX_MODEL` when starting the server.
+
+The standalone viewer saves requests in its browser storage. Use **Copy waiting requests to chat** there so the agent can apply them. Browser storage is scoped to the preview URL. Applied requests in the flow JSON are available in both modes.
